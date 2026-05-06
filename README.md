@@ -21,7 +21,7 @@ ChanView wurde unter Verwendung eines LG-TV UM7100PLA entwickelt.
 
 - Windows 11
 - Arch Linux 
-- Linux-Mint
+- Linux Mint
 
 ### Lizenz:
 
