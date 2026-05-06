@@ -1,6 +1,6 @@
 # ChanView
 
-##### ChanView erlaubt die Bearbeitung der Senderliste von LG Smart-TV's.
+#### ChanView erlaubt die Bearbeitung der Senderliste von LG Smart-TV's.
 
 Ab etwa 2014 ist es möglich die Senderliste GlobalClone00001.TLL von LG-TV's mit webOS auf einen USB-Stick zu kopieren. Die Datei kann dann mit Hilfe von ChanView am Computer bearbeitet werden und anschließend wieder auf das TV-Gerät kopiert werden.
 
