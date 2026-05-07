@@ -314,6 +314,10 @@ def Listen_in_Puffer(nr):
     Puffer[idxITEM[Aktuelle[nr]]+18] = "<favoriteIdxC>"  + favoriteIdxC[nr]  + "</favoriteIdxC>\n"
     Puffer[idxITEM[Aktuelle[nr]]+14] = "<mapAttr>"       + mapAttr[nr]       + "</mapAttr>\n"
     Puffer[idxITEM[Aktuelle[nr]]+38] = "<isUserSelCHNo>" + isUserSelCHNo[nr] + "</isUserSelCHNo>\n"
+    # Sendername in Hex und Länge ändern
+    Puffer[idxITEM[Aktuelle[nr]]+32] = "<hexVchName>" + vchName[nr].encode("utf-8").hex() + "</hexVchName>\n"
+    Puffer[idxITEM[Aktuelle[nr]]+33] = "<notConvertedLengthOfVchName>" + str(len(vchName[nr])) + "</notConvertedLengthOfVchName>\n"
+    Puffer[idxITEM[Aktuelle[nr]]+35] = "<lengthOfVchName>" + str(len(vchName[nr])) + "</lengthOfVchName>\n"
 
 ###############################################################################################################
 
@@ -944,6 +948,8 @@ def Service_Info(event=None):
                 aucSvcName[nr] = EingabeName.get()
                 Puffer[idxSID[aktSID[nr]]+6] = '<usLCNValue type="0">' + usLCNValue[nr] + '</usLCNValue>\n'
                 Puffer[idxSID[aktSID[nr]]+2] = '<aucSvcName type="0">' + aucSvcName[nr] + '</aucSvcName>\n'
+                Puffer[idxSID[aktSID[nr]]+1] = '<hexAucSvcName type="0">' + aucSvcName[nr].encode("utf-8").hex() + '</hexAucSvcName>\n'
+                Puffer[idxSID[aktSID[nr]]+8] = '<ucSvcNameLength type="0">' + str(len(aucSvcName[nr])) + '</ucSvcNameLength>\n'
                 GEAENDERT = True
 
                 Listen_Box.delete(nr)
