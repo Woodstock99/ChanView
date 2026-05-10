@@ -1013,7 +1013,7 @@ def Service_Info(event=None):
                                          usServiceID[i], bIsScramble[i], bVisibilityFlag[i], ucServiceType[i], usTPIndex[i]))
         Listen_Box.selection_set(0)
         Listen_Box.focus_set()
-    Statuszeile.config(text = "   {:5d}    |    Sortieren:   LCN = <F9>    Name = <F10>    SID = <F11>".format(i+1))
+    Statuszeile.config(text = "   {:5d}    |    Sortieren:   LCN = <F9>    Name = <F10>    SID = <F11>".format(len(aktSID)))
 
     Listen_Box.bind("<Double-Button-1>", Eintrag_Bearbeiten)
     Listen_Box.bind("<Return>", Eintrag_Bearbeiten)
