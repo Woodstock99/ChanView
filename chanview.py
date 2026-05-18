@@ -1,8 +1,8 @@
 #! /usr/bin/env python3
 #
-#  ChanView v1.05
+#  ChanView v1.06
 #
-#  LG-TV UM7100PLA
+#  LG-TV UM7100PLA (webOS)
 #
 ###############################################################################################################
 
@@ -13,28 +13,28 @@ import os
 
 ###############################################################################################################
 
-# Channel-Listen
+# Senderlisten:  <CHANNEL> / <DTV> / <ITEM>
 prNum, minorNum, original_network_id, transport_id, service_id, serviceType = [], [], [], [], [], []
 frequency, mapAttr, favoriteIdxA, favoriteIdxB, favoriteIdxC, favoriteIdxD = [], [], [], [], [], [] 
 favoriteIdxE, favoriteIdxF, favoriteIdxG, favoriteIdxH, isInvisable, isBlocked  = [], [], [], [], [], []
 isSkipped, isDeleted, isScrambled, vchName, isUserSelCHNo, videoStreamType = [], [], [], [], [], []
 
-# Service-Info
-aucSvcName, usServiceID, bVisibilityFlag, bIsScramble, usLCNValue, ucServiceType, usTPIndex = [],[],[],[],[],[],[]
+# Service-Info:  <astServiceInfo> / <ServCount..>
+servCountNr, aucSvcName, usServiceID, bVisibilityFlag, bIsScramble, usLCNValue, ucServiceType, usTPIndex = [],[],[],[],[],[],[],[]
 
-# Tuning-Info
-unFrequency, unTSID, unONID, abwSymbolRate, abwPolarization, abwCodeRate, bwDVBS2 = [],[],[],[],[],[],[] 
-abwModulationType, bwDirection, abwAnglePrec, ucAngle, ucNoOfServices, usTPHandle = [],[],[],[],[],[] 
-
-# Satelliten-Info
+# Satelliten-Info:  <SatRecordInfo>
 SatelliteNameHex, Angle, AnglePrec, DirEastWest = [],[],[],[]
 
-# Transponder-Info
+# Transponder-Info:  <TPList> / <Record..>
 TransponderId, Frequency, Polarisation, SymbolRate, TransmissionSystem, HomeTp = [],[],[],[],[],[]
 
-# Transponder-Parameter
+# Transponder-Parameter:  <stTPRecParams> / <Record..>
 uwServiceStartIndex, uwServiceEndIndex, uwServiceCount, nitVersion = [],[],[],[]
 channelIndex, frequency2, original_network_id2, transport_id2 = [],[],[],[]
+
+# Tuning-Info:  <astTuningInfo> / <TPCount..>
+unFrequency, unTSID, unONID, abwSymbolRate, abwPolarization, abwCodeRate, bwDVBS2 = [],[],[],[],[],[],[] 
+abwModulationType, bwDirection, abwAnglePrec, ucAngle, ucNoOfServices, usTPHandle = [],[],[],[],[],[] 
 
 
 Puffer = []           # alle Dateizeilen
@@ -71,7 +71,7 @@ StatusText = tk.StringVar()         # Stauszeile Text
 
 ###############################################################################################################
 
-def Datei_Oeffnen(event=None):
+def Datei_Oeffnen(event=None):    # <Strg+O>
 
     global TLLDatei
 
@@ -91,7 +91,7 @@ def Datei_Oeffnen(event=None):
 
 ###############################################################################################################
 
-def Datei_Speichern(event=None):
+def Datei_Speichern(event=None):    # <Strg+S>
 
     global TLLDatei
 
@@ -125,7 +125,7 @@ def TLLDatei_Speichern():
 
     global GEAENDERT
 
-    with open(TLLDatei, "w", encoding="utf-8") as Datei:    # TLLDatei schreiben (überschreiben)
+    with open(TLLDatei, "w") as Datei:
         for i in range(0, len(Puffer)):
             if os.name == "posix":
                 Datei.write(Puffer[i].replace('\n', '\r\n'))    # LF -> CR LF 
@@ -144,6 +144,8 @@ def TLLDatei_in_Puffer():
         for Zeile in Datei:
             Puffer.append(Zeile)
     Alle_Anzeigen()
+
+###############################################################################################################
 
 ###############################################################################################################
 
@@ -287,12 +289,18 @@ def ITEM_in_Listen(i):
     isDeleted.append(Puffer[i+28][11:n])
     n = Puffer[i+31].find("</", 13)
     isScrambled.append(Puffer[i+31][13:n])
-    n = Puffer[i+34].find("</", 9)
-    vchName.append(Puffer[i+34][9:n])
     n = Puffer[i+38].find("</", 15)
     isUserSelCHNo.append(Puffer[i+38][15:n])
     n = Puffer[i+39].find("</", 17)
     videoStreamType.append(Puffer[i+39][17:n])
+
+    # Sendername: wenn <vchName> leer oder nur ein Zeichen, dann <hexVchName> laden
+    n = Puffer[i+34].find("</", 9)
+    if (n-9) < 2:
+        n = Puffer[i+32].find("</", 12)
+        vchName.append('"' + bytearray.fromhex(Puffer[i+32][12:n]).decode("cp1252") + '"')
+    else:
+        vchName.append(Puffer[i+34][9:n])
 
 ###############################################################################################################
 
@@ -300,10 +308,20 @@ def Listen_in_Puffer(nr):
 
     global Puffer
 
+    tabelle = str.maketrans({ 'ä':'a','Ä':'A','ö':'o','Ö':'O','ü':'u','Ü':'U','ß':' ',0x05:'' })
+
+    # Hex-Name und Länge ändern
+    Puffer[idxITEM[Aktuelle[nr]]+32] = "<hexVchName>" + vchName[nr].encode("cp1252").hex() + "</hexVchName>\n"
+    Puffer[idxITEM[Aktuelle[nr]]+33] = "<notConvertedLengthOfVchName>" + str(len(vchName[nr])) + "</notConvertedLengthOfVchName>\n"
+
+    vchName[nr] = vchName[nr].translate(tabelle)    # dann Umlaute konvertieren
+
+    Puffer[idxITEM[Aktuelle[nr]]+34] = "<vchName>"       + vchName[nr]       + "</vchName>\n"
+    Puffer[idxITEM[Aktuelle[nr]]+35] = "<lengthOfVchName>" + str(len(vchName[nr])) + "</lengthOfVchName>\n"
+
     # nur die Veränderbaren aktuallisieren
     Puffer[idxITEM[Aktuelle[nr]]+1]  = "<prNum>"         + prNum[nr]         + "</prNum>\n"
     Puffer[idxITEM[Aktuelle[nr]]+2]  = "<minorNum>"      + minorNum[nr]      + "</minorNum>\n"
-    Puffer[idxITEM[Aktuelle[nr]]+34] = "<vchName>"       + vchName[nr]       + "</vchName>\n"
     Puffer[idxITEM[Aktuelle[nr]]+31] = "<isScrambled>"   + isScrambled[nr]   + "</isScrambled>\n"
     Puffer[idxITEM[Aktuelle[nr]]+26] = "<isSkipped>"     + isSkipped[nr]     + "</isSkipped>\n"
     Puffer[idxITEM[Aktuelle[nr]]+24] = "<isInvisable>"   + isInvisable[nr]   + "</isInvisable>\n"
@@ -314,14 +332,10 @@ def Listen_in_Puffer(nr):
     Puffer[idxITEM[Aktuelle[nr]]+18] = "<favoriteIdxC>"  + favoriteIdxC[nr]  + "</favoriteIdxC>\n"
     Puffer[idxITEM[Aktuelle[nr]]+14] = "<mapAttr>"       + mapAttr[nr]       + "</mapAttr>\n"
     Puffer[idxITEM[Aktuelle[nr]]+38] = "<isUserSelCHNo>" + isUserSelCHNo[nr] + "</isUserSelCHNo>\n"
-    # Sendername in Hex und Länge ändern
-    Puffer[idxITEM[Aktuelle[nr]]+32] = "<hexVchName>" + vchName[nr].encode("utf-8").hex() + "</hexVchName>\n"
-    Puffer[idxITEM[Aktuelle[nr]]+33] = "<notConvertedLengthOfVchName>" + str(len(vchName[nr])) + "</notConvertedLengthOfVchName>\n"
-    Puffer[idxITEM[Aktuelle[nr]]+35] = "<lengthOfVchName>" + str(len(vchName[nr])) + "</lengthOfVchName>\n"
 
 ###############################################################################################################
 
-def Sender_Zeile_Anzeigen(pos, i):
+def Listen_Box_Zeile_Anzeigen(pos, i):
 
     Listen_Box.insert(pos, "  {:6s} {:5s} {:30.30s} {:10s} {:7s} {:6s} {:6s} {:5s} {:3s} │  {:2s} {:2s} {:2s} {:2s} {:2s} │  {:4s} {:4s} {:4s} {:4s} {:4s} {:4s} {:4s} {:4s}"\
         .format(prNum[i], minorNum[i], vchName[i], servTypText[i], frequency[i], service_id[i], transport_id[i], original_network_id[i],\
@@ -345,13 +359,13 @@ def Aktuelle_Anzeigen(event=None):
 
     Listen_Box.delete(0, tk.END) 
     for i in range(len(Aktuelle)):
-        Sender_Zeile_Anzeigen(tk.END, i)
+        Listen_Box_Zeile_Anzeigen(tk.END, i)
     StatusAnzahl.set(len(Aktuelle))
     Cursor_Anzeigen()
 
 ###############################################################################################################
 
-def Alle_Anzeigen(event=None):
+def Alle_Anzeigen(event=None):    # <F3>
 
     global Aktuelle
 
@@ -364,120 +378,7 @@ def Alle_Anzeigen(event=None):
 
 ###############################################################################################################
 
-###############################################################################################################
-
-def Favoriten_Anzeigen(fav):
-
-    global Aktuelle
-
-    Aktuelle.clear()
-    Listen_Loeschen()
-
-    for i in range(len(idxITEM)):
-        if Puffer[idxITEM[i]+15+fav] != "<favoriteIdx" + chr(64+fav) + ">250</favoriteIdx" + chr(64+fav) + ">\n":   # chr(65=A, 66=B, 67=C)
-            Aktuelle.append(i)
-            ITEM_in_Listen(idxITEM[i])
-
-    #  Bubble Sort
-    for x in range(len(Aktuelle)):
-        for i in range(0, len(Aktuelle)-1, 1):
-            if (fav == 1 and int(favoriteIdxA[i]) > int(favoriteIdxA[i+1])) or \
-               (fav == 2 and int(favoriteIdxB[i]) > int(favoriteIdxB[i+1])) or \
-               (fav == 3 and int(favoriteIdxC[i]) > int(favoriteIdxC[i+1])) or \
-               (fav == 4 and int(favoriteIdxD[i]) > int(favoriteIdxD[i+1])):
-                Aktuelle[i], Aktuelle[i+1] = Aktuelle[i+1], Aktuelle[i]
-                Listen_Tauschen(i)
-    
-    Listen_Box.delete(0, tk.END) 
-    Aktuelle_Anzeigen()
-    StatusText.set("Favoriten " + str(fav) + " sortiert")
-
-###############################################################################################################
-
-def Filter_sTyp(typ):
-
-    global Aktuelle
-
-    Aktuelle.clear()
-    Listen_Loeschen()
-
-    for i in range(len(idxITEM)):
-        if typ == "SD-TV":
-            if Puffer[idxITEM[i]+9] == "<serviceType>1</serviceType>\n" or \
-               Puffer[idxITEM[i]+9] == "<serviceType>22</serviceType>\n":
-                Aktuelle.append(i)
-                ITEM_in_Listen(idxITEM[i])
-        if typ == "HD-TV":
-            if Puffer[idxITEM[i]+9] == "<serviceType>17/serviceType>\n" or \
-               Puffer[idxITEM[i]+9] == "<serviceType>25</serviceType>\n":
-                Aktuelle.append(i)
-                ITEM_in_Listen(idxITEM[i])
-        if typ == "UHD-TV":
-            if Puffer[idxITEM[i]+9] == "<serviceType>31</serviceType>\n" or \
-               Puffer[idxITEM[i]+9] == "<serviceType>159</serviceType>\n":
-                Aktuelle.append(i)
-                ITEM_in_Listen(idxITEM[i])
-        if typ == "Radio":
-            if Puffer[idxITEM[i]+9] == "<serviceType>2</serviceType>\n" or \
-               Puffer[idxITEM[i]+9] == "<serviceType>10</serviceType>\n":
-                Aktuelle.append(i)
-                ITEM_in_Listen(idxITEM[i])
-
-    Listen_Box.delete(0, tk.END) 
-    Aktuelle_Anzeigen()
-    StatusText.set("Nur " + typ + " Sender")
-
-###############################################################################################################
-
-def Filter_PayTV():
-
-    global Aktuelle
-
-    Aktuelle.clear()
-    Listen_Loeschen()
-
-    for i in range(len(idxITEM)):
-        if Puffer[idxITEM[i]+31] == "<isScrambled>1</isScrambled>\n":
-            Aktuelle.append(i)
-            ITEM_in_Listen(idxITEM[i])
-
-    Listen_Box.delete(0, tk.END) 
-    Aktuelle_Anzeigen()
-    StatusText.set("Nur Pay-TV Sender")
-
-###############################################################################################################
-
-def Sortieren(gruppe):
-
-    global Aktuelle
-
-    # Bubble Sort
-    for j in range(len(Aktuelle)):
-        for i in range(0, len(Aktuelle)-1, 1):
-            if gruppe == "Nummer": 
-                if int(prNum[i]) > int(prNum[i+1]):
-                    Aktuelle[i], Aktuelle[i+1] = Aktuelle[i+1], Aktuelle[i]
-                    Listen_Tauschen(i)
-            if gruppe == "Name": 
-                if vchName[i].lower() > vchName[i+1].lower():
-                    Aktuelle[i], Aktuelle[i+1] = Aktuelle[i+1], Aktuelle[i]
-                    Listen_Tauschen(i)
-            if gruppe == "Frequenz": 
-                if int(frequency[i]) > int(frequency[i+1]):
-                    Aktuelle[i], Aktuelle[i+1] = Aktuelle[i+1], Aktuelle[i]
-                    Listen_Tauschen(i)
-            if gruppe == "ServiceID": 
-                if int(service_id[i]) > int(service_id[i+1]):
-                    Aktuelle[i], Aktuelle[i+1] = Aktuelle[i+1], Aktuelle[i]
-                    Listen_Tauschen(i)
-   
-    Listen_Box.delete(0, tk.END) 
-    Aktuelle_Anzeigen()
-    StatusText.set("Sortiert nach " + gruppe)
-
-###############################################################################################################
-
-def Sender_Suchen(event=None):
+def Sender_Suchen(event=None):    # <F7>
 
     def Suche_Anzeigen(event=None):
 
@@ -518,103 +419,210 @@ def Sender_Suchen(event=None):
 
 ###############################################################################################################
 
-###############################################################################################################
+def Senderliste_Drucken(event=None):
 
-def Sender_Ueberspringen(event=None):        # Doppelklick Rechts
+    Liste = Listen_Box.get(0, tk.END)
 
-    global GEAENDERT, Puffer
+    with open("Senderliste.txt", "w") as Datei:
+        for i in Liste:
+            Datei.write(i[0:114] + "\n")    # nur bis Fav1
 
-    if Listen_Box.curselection() and len(Aktuelle) > 0:
-
-        nr = Listen_Box.curselection()[0]
-
-        if isSkipped[nr] == "0":
-            Puffer[idxITEM[Aktuelle[nr]]+26] = "<isSkipped>1</isSkipped>\n"    # on
-            isSkipped[nr] = "1"
-        else:
-            Puffer[idxITEM[Aktuelle[nr]]+26] = "<isSkipped>0</isSkipped>\n"    # off
-            isSkipped[nr] = "0"
-
-        Listen_Box.delete(nr)
-        Sender_Zeile_Anzeigen(nr, nr)
-        GEAENDERT = True
-
-        Listen_Box.selection_set(nr+1)       # Markierung auf nächste Zeile
-        Listen_Box.focus_set()
+    message.showinfo("Channel View", "\nDie Datei Senderliste.txt wurde erstellt.  ")
 
 ###############################################################################################################
 
-markierte = 0    # global!!
+###############################################################################################################
+
+def Favoriten_Anzeigen(fav):
+
+    global Aktuelle
+
+    Aktuelle.clear()
+    Listen_Loeschen()
+
+    for i in range(len(idxITEM)):
+        if Puffer[idxITEM[i]+15+fav] != "<favoriteIdx" + chr(64+fav) + ">250</favoriteIdx" + chr(64+fav) + ">\n":   # chr(65=A, 66=B, 67=C)
+            Aktuelle.append(i)
+            ITEM_in_Listen(idxITEM[i])
+
+    #  Bubble Sort
+    for x in range(len(Aktuelle)):
+        for i in range(0, len(Aktuelle)-1, 1):
+            if (fav == 1 and int(favoriteIdxA[i]) > int(favoriteIdxA[i+1])) or \
+               (fav == 2 and int(favoriteIdxB[i]) > int(favoriteIdxB[i+1])) or \
+               (fav == 3 and int(favoriteIdxC[i]) > int(favoriteIdxC[i+1])) or \
+               (fav == 4 and int(favoriteIdxD[i]) > int(favoriteIdxD[i+1])):
+                Aktuelle[i], Aktuelle[i+1] = Aktuelle[i+1], Aktuelle[i]
+                Listen_Tauschen(i)
+    
+    Listen_Box.delete(0, tk.END) 
+    Aktuelle_Anzeigen()
+    StatusText.set("Favoriten " + str(fav) + " sortiert")
 
 ###############################################################################################################
 
-def Markieren(a,i):
+def Filtern_serviceType(typ):
 
-    global GEAENDERT, Puffer, markierte
+    global Aktuelle
 
-    if a == 1:   # überspringen
-        if isSkipped[i] == "0":
-            Puffer[idxITEM[Aktuelle[i]]+26] = "<isSkipped>1</isSkipped>\n"
-            isSkipped[i] = "1"
-            markierte += 1
-    if a == 2:   # verstecken
-        if isInvisable[i] == "0":
-            Puffer[idxITEM[Aktuelle[i]]+24] = "<isInvisible>1</isInvisible>\n"
-            isInvisable[i] = "1"
-            markierte += 1
-    if a == 3:   # sperren
-        if isBlocked[i] == "0":
-            Puffer[idxITEM[Aktuelle[i]]+25] = "<isBlocked>1</isBlocked>\n"
-            isBlocked[i] = "1"
-            markierte += 1
-    if a == 4:   # löschen
-        if isDeleted[i] == "0":
-            Puffer[idxITEM[Aktuelle[i]]+28] = "<isDeleted>1</isDeleted>\n"
-            isDeleted[i] = "1"
-            markierte += 1
+    Aktuelle.clear()
+    Listen_Loeschen()
 
-    GEAENDERT = True
+    for i in range(len(idxITEM)):
+        if typ == "SD-TV":
+            if Puffer[idxITEM[i]+9] == "<serviceType>1</serviceType>\n" or \
+               Puffer[idxITEM[i]+9] == "<serviceType>22</serviceType>\n":
+                Aktuelle.append(i)
+                ITEM_in_Listen(idxITEM[i])
+        if typ == "HD-TV":
+            if Puffer[idxITEM[i]+9] == "<serviceType>17/serviceType>\n" or \
+               Puffer[idxITEM[i]+9] == "<serviceType>25</serviceType>\n":
+                Aktuelle.append(i)
+                ITEM_in_Listen(idxITEM[i])
+        if typ == "UHD-TV":
+            if Puffer[idxITEM[i]+9] == "<serviceType>31</serviceType>\n" or \
+               Puffer[idxITEM[i]+9] == "<serviceType>159</serviceType>\n":
+                Aktuelle.append(i)
+                ITEM_in_Listen(idxITEM[i])
+        if typ == "Radio":
+            if Puffer[idxITEM[i]+9] == "<serviceType>2</serviceType>\n" or \
+               Puffer[idxITEM[i]+9] == "<serviceType>10</serviceType>\n":
+                Aktuelle.append(i)
+                ITEM_in_Listen(idxITEM[i])
+
+    Listen_Box.delete(0, tk.END) 
+    Aktuelle_Anzeigen()
+    StatusText.set("Nur " + typ + " Sender")
+
+###############################################################################################################
+
+def Filtern_PayTV():
+
+    global Aktuelle
+
+    Aktuelle.clear()
+    Listen_Loeschen()
+
+    for i in range(len(idxITEM)):
+        if Puffer[idxITEM[i]+31] == "<isScrambled>1</isScrambled>\n":
+            Aktuelle.append(i)
+            ITEM_in_Listen(idxITEM[i])
+
+    Listen_Box.delete(0, tk.END) 
+    Aktuelle_Anzeigen()
+    StatusText.set("Nur Pay-TV Sender")
+
+###############################################################################################################
+
+def Sender_Sortieren(gruppe, event=None):
+
+    global Aktuelle
+
+    # Bubble Sort
+    for j in range(len(Aktuelle)):
+        for i in range(0, len(Aktuelle)-1, 1):
+            if gruppe == "Nummer":     # <F4> 
+                if int(prNum[i]) > int(prNum[i+1]):
+                    Aktuelle[i], Aktuelle[i+1] = Aktuelle[i+1], Aktuelle[i]
+                    Listen_Tauschen(i)
+            if gruppe == "Name":       # <F5>
+                if vchName[i].lower() > vchName[i+1].lower():
+                    Aktuelle[i], Aktuelle[i+1] = Aktuelle[i+1], Aktuelle[i]
+                    Listen_Tauschen(i)
+            if gruppe == "Frequenz": 
+                if int(frequency[i]) > int(frequency[i+1]):
+                    Aktuelle[i], Aktuelle[i+1] = Aktuelle[i+1], Aktuelle[i]
+                    Listen_Tauschen(i)
+            if gruppe == "ServiceID": 
+                if int(service_id[i]) > int(service_id[i+1]):
+                    Aktuelle[i], Aktuelle[i+1] = Aktuelle[i+1], Aktuelle[i]
+                    Listen_Tauschen(i)
+   
+    Listen_Box.delete(0, tk.END) 
+    Aktuelle_Anzeigen()
+    StatusText.set("Sortiert nach " + gruppe)
 
 ###############################################################################################################
 
 def Sender_Markieren(a,b):
 
-    global markierte
-
     insgesamt = 0
     markierte = 0
 
-    if b == 1:   # Radio
+    def Markieren(a,i):
+
+        global GEAENDERT, Puffer
+
+        if a == 1:   # überspringen
+            if isSkipped[i] == "0":
+                Puffer[idxITEM[Aktuelle[i]]+26] = "<isSkipped>1</isSkipped>\n"
+                isSkipped[i] = "1"
+                GEAENDERT = True
+                return(True)
+        if a == 2:   # verstecken
+            if isInvisable[i] == "0":
+                Puffer[idxITEM[Aktuelle[i]]+24] = "<isInvisible>1</isInvisible>\n"
+                isInvisable[i] = "1"
+                GEAENDERT = True
+                return(True)
+        if a == 3:   # sperren
+            if isBlocked[i] == "0":
+                Puffer[idxITEM[Aktuelle[i]]+25] = "<isBlocked>1</isBlocked>\n"
+                isBlocked[i] = "1"
+                GEAENDERT = True
+                return(True)
+        if a == 4:   # löschen
+            if isDeleted[i] == "0":
+                Puffer[idxITEM[Aktuelle[i]]+28] = "<isDeleted>1</isDeleted>\n"
+                isDeleted[i] = "1"
+                GEAENDERT = True
+                return(True)
+    
+        return(False)
+ 
+#--------------------------------------------
+
+    if b == 1:   # UHD-TV
+        for i in range(len(Aktuelle)):
+            if serviceType[i] == "31" or serviceType[i] == "159":
+                if Markieren(a,i):
+                    markierte += 1
+                insgesamt += 1
+
+    if b == 2:   # Radio
         for i in range(len(Aktuelle)):
             if serviceType[i] == "2" or serviceType[i] == "7" or serviceType[i] == "10":
-                Markieren(a,i)
+                if Markieren(a,i):
+                    markierte += 1
                 insgesamt += 1
 
-    if b == 2:   # Pay-TV
+    if b == 3:   # Pay-TV
         for i in range(len(Aktuelle)):
             if isScrambled[i] == "1":
-                Markieren(a,i)
+                if Markieren(a,i):
+                    markierte += 1
                 insgesamt += 1
 
-    if b == 3:   # Doppelte
-        for j in range(0, len(Aktuelle), 1):
-            for i in range(j+1, len(Aktuelle), 1):
-                if frequency[j] == frequency[i] and service_id[j] == service_id[i] and transport_id[j] == transport_id[i]: 
-                    insgesamt += 1
-                    # nur wenn beide noch nicht markiert
-                    if (a == 1 and isSkipped[j] == "0" and isSkipped[i] == "0") or \
-                       (a == 2 and isInvisable[j] == "0" and isInvisable[i] == "0") or \
-                       (a == 3 and isBlocked[j] == "0" and isBlocked[i] == "0") or \
-                       (a == 4 and isDeleted[j] == "0" and isDeleted[i] == "0"):
-                        Markieren(a,i)
-
-    if b == 4:   # Unbekannte
+    if b == 4:   # Unbekannte    (SD-TV = 1+22 / HD-TV = 17+25 / UHD-TV = 31+159 / Radio = 2+7+10 / VText = 3 / Data/Test = 12)
         for i in range(len(Aktuelle)):
             if (serviceType[i] !=  "1" and serviceType[i] !=  "2" and serviceType[i] !=  "7" and serviceType[i] != "10" and \
-                serviceType[i] != "17" and serviceType[i] != "22" and serviceType[i] != "25" and serviceType[i] != "31") or \
-                (prNum[i] ==  "0" and minorNum[i] == "0"):
-                Markieren(a,i)
+                serviceType[i] != "17" and serviceType[i] != "22" and serviceType[i] != "25" and serviceType[i] != "31"):
+                if Markieren(a,i):
+                    markierte += 1
                 insgesamt += 1
+
+#    if b == 5:   # Doppelte
+#        for j in range(0, len(Aktuelle), 1):
+#            for i in range(j+1, len(Aktuelle), 1):
+#                if frequency[j] == frequency[i] and service_id[j] == service_id[i] and transport_id[j] == transport_id[i]: 
+#                    insgesamt += 1
+#                    # nur wenn beide noch nicht markiert
+#                    if (a == 1 and isSkipped[j] == "0" and isSkipped[i] == "0") or \
+#                       (a == 2 and isInvisable[j] == "0" and isInvisable[i] == "0") or \
+#                       (a == 3 and isBlocked[j] == "0" and isBlocked[i] == "0") or \
+#                       (a == 4 and isDeleted[j] == "0" and isDeleted[i] == "0"):
+#                       Markieren(a,i)
+#                       markierte += 1
 
     Listen_Box.delete(0, tk.END) 
     Aktuelle_Anzeigen()
@@ -622,9 +630,32 @@ def Sender_Markieren(a,b):
 
 ###############################################################################################################
 
+def Sender_Ueberspringen(event=None):    # <Doppelklick Rechts>
+
+    global GEAENDERT, Puffer
+
+    if Listen_Box.curselection() and len(Aktuelle) > 0:
+        nr = Listen_Box.curselection()[0]
+
+        if isSkipped[nr] == "0":
+            Puffer[idxITEM[Aktuelle[nr]]+26] = "<isSkipped>1</isSkipped>\n"    # on
+            isSkipped[nr] = "1"
+        else:
+            Puffer[idxITEM[Aktuelle[nr]]+26] = "<isSkipped>0</isSkipped>\n"    # off
+            isSkipped[nr] = "0"#
+
+        GEAENDERT = True
+
+        Listen_Box.delete(nr)
+        Listen_Box_Zeile_Anzeigen(nr, nr)
+        Listen_Box.selection_set(nr+1)
+        Listen_Box.focus_set()
+
 ###############################################################################################################
 
-def Sender_Bearbeiten(event=None):
+###############################################################################################################
+
+def Sender_Bearbeiten(event=None):    # <Return> oder <Doppelklick Links>
 
     def Eintrag_Aendern(event=None):
 
@@ -634,9 +665,12 @@ def Sender_Bearbeiten(event=None):
            EingabeFav1.get().isnumeric() and EingabeFav2.get().isnumeric() and EingabeFav3.get().isnumeric():
 
             vchName[nr] = EingabeName.get()
+            if vchName[nr][0] == '"' and vchName[nr][-1] == '"':
+                vchName[nr] = vchName[nr].replace('"','')        # ohne "
+ 
             prNum[nr] = EingabeNr.get()
             minorNum[nr] = EingabemNr.get()
-            isUserSelCHNo[nr] = "1"           # immer!! ?? 
+            isUserSelCHNo[nr] = "1"           # immer!! 
             # Favoritenliste schreiben
             favoriteIdxA[nr] = EingabeFav1.get()
             favoriteIdxB[nr] = EingabeFav2.get()
@@ -660,26 +694,25 @@ def Sender_Bearbeiten(event=None):
             if AttributL.get():   isDeleted[nr] = "1"
             else:                 isDeleted[nr] = "0"
 
-            Listen_Box.delete(nr)
-            Sender_Zeile_Anzeigen(nr, nr)
             Listen_in_Puffer(nr)
             GEAENDERT = True
 
-            Listen_Box.selection_set(nr+1)       # Markierung auf nächste Zeile
+            Listen_Box.delete(nr)
+            Listen_Box_Zeile_Anzeigen(nr, nr)
+            Listen_Box.selection_set(nr+1)
             Listen_Box.focus_set()
             Fenster.destroy()
 
 #--------------------------------------------
 
-    if Listen_Box.curselection() and len(Aktuelle) > 0:    # wenn Zeile markiert und mind. ein Listenelement
+    if Listen_Box.curselection() and len(Aktuelle) > 0:
+        nr = Listen_Box.curselection()[0]
 
         Fenster = tk.Toplevel(Master)
         Fenster.title("Kanal bearbeiten")
         Fenster.geometry("+" + str(Master.winfo_x()+270) + "+" + str(Master.winfo_y()+300)) 
         Fenster.resizable(False, False)
         Fenster.wm_attributes("-topmost", True)
-
-        nr = Listen_Box.curselection()[0]
 
         EingabeName =  tk.Entry(Fenster, bd=3, width=40, font="Helvetica 11")
         TextNr = tk.Label(Fenster, text="Nr: ", font="Helvetica 11")
@@ -766,7 +799,72 @@ def Sender_Bearbeiten(event=None):
 
 ###############################################################################################################
 
-def Sender_Entfernen(event=None):
+def Sender_Kopieren(event=None):    # <F8> 
+
+    def Eintrag_Aendern(event=None):
+
+        global GEAENDERT, Puffer
+
+        PrgNum = EingabeNummer.get()
+        PrgName = EingabeName.get()
+        HexName = PrgName.encode("cp1252").hex()
+        Puffer[idxITEM[-1]+1]  = "<prNum>"    + str(PrgNum) + "</prNum>\n"
+        Puffer[idxITEM[-1]+2]  = "<minorNum>" + str(PrgNum) + "</minorNum>\n"
+        Puffer[idxITEM[-1]+38] = "<isUserSelCHNo>1</isUserSelCHNo>\n"
+        Puffer[idxITEM[-1]+34] = "<vchName>"    + PrgName + "</vchName>\n"
+        Puffer[idxITEM[-1]+32] = "<hexVchName>" + HexName + "</hexVchName>\n"
+        Puffer[idxITEM[-1]+35] = "<lengthOfVchName>"             + str(len(PrgName)) + "</lengthOfVchName>\n"
+        Puffer[idxITEM[-1]+33] = "<notConvertedLengthOfVchName>" + str(len(PrgName)) + "</notConvertedLengthOfVchName>\n"
+        GEAENDERT = True
+        Fenster.destroy()
+
+    if Listen_Box.curselection() and len(Aktuelle) > 0:
+        nr = Listen_Box.curselection()[0]
+
+        idxITEM.append(idxITEM[-1]+42)        # Zeiger auf neuen letzten (vorher = </DTV>)
+        for i in range(42):                   # Senderblock ans Ende kopieren
+            Puffer.insert(idxITEM[-1]+i, Puffer[idxITEM[Aktuelle[nr]]+i])
+
+        for PrgNum in range(1, len(idxITEM), 1):      # erste freie Nummer suchen
+            gefunden = False
+            for i in range(0, len(idxITEM), 1):
+                n = Puffer[idxITEM[i]+1].find("</", 7)
+                if str(PrgNum) == Puffer[idxITEM[i]+1][7:n]:    # <prNum>PrgNum</prNum>
+                    gefunden = True
+                    break
+            if not gefunden:   break
+
+        n = Puffer[idxITEM[-1]+32].find("</", 12)
+        HexName = Puffer[idxITEM[-1]+32][12:n]                  # Hex-Namen abgleichen und ersetzen
+        if HexName[0:2] == "05":     HexName = HexName[2:]
+        PrgName = bytearray.fromhex(HexName).decode("cp1252")
+
+        Fenster = tk.Toplevel(Master)
+        Fenster.title("Sender kopieren nach:")
+        Fenster.geometry("+" + str(Master.winfo_x()+450) + "+" + str(Master.winfo_y()+350)) 
+        Fenster.resizable(False, False)
+        Fenster.wm_attributes("-topmost", True)
+
+        EingabeNummer = tk.Entry(Fenster, bd=4, width=3, font="Helvetica 12")
+        EingabeName = tk.Entry(Fenster, bd=4, width=26, font="Helvetica 12")
+        tk.Label(Fenster).pack(side="left", padx=20, pady=40)
+        EingabeNummer.pack(side="left", padx=10)
+        EingabeName.pack(side="left", padx=10)            
+        tk.Label(Fenster).pack(side="left", padx=20)
+
+        EingabeName.insert(0, PrgName)
+        EingabeNummer.insert(0, str(PrgNum))
+        EingabeNummer.select_range(0, tk.END)
+        EingabeNummer.focus_set()
+        EingabeNummer.bind("<Return>", Eintrag_Aendern)
+        EingabeName.bind("<Return>", Eintrag_Aendern)
+        Fenster.bind("<Escape>", lambda event: Fenster.destroy())
+
+###############################################################################################################
+
+###############################################################################################################
+
+def Sender_Entfernen(event=None):    # <Strg+D>
 
     global GEAENDERT, Puffer, Aktuelle
 
@@ -801,13 +899,12 @@ def Sender_Entfernen(event=None):
 
 #--------------------------------------------
 
-    if Listen_Box.curselection():
-
+    if Listen_Box.curselection() and len(Aktuelle) > 0:
         nr = Listen_Box.curselection()[0]
 
         for i in range(42):
             Puffer.pop(idxITEM[Aktuelle[nr]])    # <ITEM> bis </ITEM> aus Puffer löschen
-        idxITEM.pop(-1)                          # immer letzten Zeiger löschen, Puffer ist unsortiert!!
+        idxITEM.pop(-1)                          # 42x letztes Element löschen
 
         for i in range(len(Aktuelle)):           # nur nachfolgende Aktuelle -1
             if Aktuelle[i] > Aktuelle[nr]:   Aktuelle[i] -= 1
@@ -816,19 +913,20 @@ def Sender_Entfernen(event=None):
         Listenelement_Loeschen()                 # 25 Listen
         GEAENDERT = True
 
-        StatusAnzahl.set(len(Aktuelle))
         Listen_Box.delete(nr)
-        Listen_Box.selection_set(nr)             # Markierung auf neue Zeile
+        StatusAnzahl.set(len(Aktuelle))
+        Listen_Box.selection_set(nr)
         Listen_Box.focus_set()
 
 ###############################################################################################################
 
 ###############################################################################################################
 
-def Service_Info(event=None):
+def Service_Info(event=None):    # <F9>
 
     def SID_Listen_Loeschen():
 
+        servCountNr.clear()
         aucSvcName.clear()
         usServiceID.clear()
         bVisibilityFlag.clear()
@@ -845,10 +943,12 @@ def Service_Info(event=None):
         aktSID.clear()
         for i in range(len(Puffer)):
             if Puffer[i] == "<astServiceInfo>\n":
-                i += 1
+                i += 1     # erster <ServCount..>
                 while Puffer[i] != "</astServiceInfo>\n":
                     idxSID.append(i)               # Zeiger auf <ServCount..>'s
                     aktSID.append(len(aktSID))     # Zeiger auf Aktuellen
+                    n = Puffer[idxSID[-1]].find('>\n', 10)
+                    servCountNr.append(Puffer[i][10:n])
                     n = Puffer[idxSID[-1]+2].find('</', 21)
                     aucSvcName.append(Puffer[idxSID[-1]+2][21:n])
                     n = Puffer[idxSID[-1]+3].find('</', 22)
@@ -864,9 +964,10 @@ def Service_Info(event=None):
                     n = Puffer[idxSID[-1]+9].find('</', 20)
                     usTPIndex.append(Puffer[idxSID[-1]+9][20:n])
                     i += 14             # nächster <ServCount..>
- 
+
     def SID_Tauschen(i):
 
+        servCountNr[i], servCountNr[i+1] = servCountNr[i+1], servCountNr[i]
         aucSvcName[i], aucSvcName[i+1] = aucSvcName[i+1], aucSvcName[i]
         usServiceID[i], usServiceID[i+1] = usServiceID[i+1], usServiceID[i]
         bVisibilityFlag[i], bVisibilityFlag[i+1] = bVisibilityFlag[i+1], bVisibilityFlag[i]
@@ -882,6 +983,10 @@ def Service_Info(event=None):
         # Bubble Sort
         for j in range(len(aktSID)):
             for i in range(0, len(aktSID)-1, 1):
+                if gruppe == "Pos": 
+                    if int(servCountNr[i]) > int(servCountNr[i+1]):
+                        aktSID[i], aktSID[i+1] = aktSID[i+1], aktSID[i]
+                        SID_Tauschen(i)
                 if gruppe == "LCN": 
                     if int(usLCNValue[i]) > int(usLCNValue[i+1]):
                         aktSID[i], aktSID[i+1] = aktSID[i+1], aktSID[i]
@@ -897,18 +1002,16 @@ def Service_Info(event=None):
        
         Listen_Box.delete(0, tk.END) 
         for i in range(len(aktSID)):
-            Listen_Box.insert(tk.END, " {:>5s}   {:30.30s} {:6s} {:2s} {:2s} {:3s} {:3s}".format(usLCNValue[i], aucSvcName[i],\
-                                         usServiceID[i], bIsScramble[i], bVisibilityFlag[i], ucServiceType[i], usTPIndex[i]))
+            Listen_Box.insert(tk.END, " {:>5s} {:>5s}   {:30.30s} {:6s} {:2s} {:2s} {:3s} {:3s}".format(servCountNr[i], usLCNValue[i], \
+                                         aucSvcName[i], usServiceID[i], bIsScramble[i], bVisibilityFlag[i], ucServiceType[i], usTPIndex[i]))
         Listen_Box.selection_set(0)
         Listen_Box.focus_set()
 
-
-    def Eintrag_Entfernen(event=None):
+    def Eintrag_auf_Null(event=None):
 
         global GEAENDERT, Puffer
 
         if Listen_Box.curselection():
-
             nr = Listen_Box.curselection()[0]
 
             aucSvcName[nr] = " "
@@ -928,19 +1031,48 @@ def Service_Info(event=None):
             Puffer[idxSID[aktSID[nr]]+7] = '<ucServiceType type="0">0</ucServiceType>\n'
             Puffer[idxSID[aktSID[nr]]+8] = '<ucSvcNameLength type="0">0</ucSvcNameLength>\n'
             Puffer[idxSID[aktSID[nr]]+9] = '<usTPIndex type="0">0</usTPIndex>\n'
+            GEAENDERT = True
 
             Listen_Box.delete(nr)
-            Listen_Box.insert(nr, " {:>5s}   {:30.30s} {:6s} {:2s} {:2s} {:3s} {:3s}".format(usLCNValue[nr], aucSvcName[nr],\
-                                      usServiceID[nr], bIsScramble[nr], bVisibilityFlag[nr], ucServiceType[nr], usTPIndex[nr]))
-            Listen_Box.selection_set(nr+1)      # Markierung auf nächste Zeile
+            Listen_Box.insert(nr, " {:>5s} {:>5s}   {:30.30s} {:6s} {:2s} {:2s} {:3s} {:3s}".format(servCountNr[nr], usLCNValue[nr], \
+                                     aucSvcName[nr], usServiceID[nr], bIsScramble[nr], bVisibilityFlag[nr], ucServiceType[nr], usTPIndex[nr]))
+            Listen_Box.selection_set(nr+1)
             Listen_Box.focus_set()
+
+    def Eintrag_Entfernen(event=None):
+
+        global GEAENDERT, Puffer, aktSID
+
+        if Listen_Box.curselection():
+            nr = Listen_Box.curselection()[0]
+
+            aucSvcName.pop(nr)
+            usServiceID.pop(nr)
+            bVisibilityFlag.pop(nr)
+            bIsScramble.pop(nr)
+            usLCNValue.pop(nr)
+            ucServiceType.pop(nr)
+            usTPIndex.pop(nr)
+
+            for i in range(14):
+                Puffer.pop(idxSID[aktSID[nr]])      # <ServCount..> bis </ServCount..> aus Puffer löschen
+            idxSID.pop(-1)                          # 14x letztes Element löschen (ganzen Eintrag)
+
+            for i in range(len(aktSID)):            # nur nachfolgende aktSID -1
+                if aktSID[i] > aktSID[nr]:   aktSID[i] -= 1
+            aktSID.pop(nr)
             GEAENDERT = True
+
+            Listen_Box.delete(nr)
+            Statuszeile.config(text = "  {:7d}   |   Sortieren nach:   LCN = <F10>,   Name = <F11>,   SID = <F12>".format(len(aktSID)))
+            Listen_Box.selection_set(nr)
+            Listen_Box.focus_set()
 
     def Eintrag_Bearbeiten(event=None):
 
         def Eintrag_Aendern(event=None):
 
-            global GEAENDERT
+            global GEAENDERT, Puffer
 
             if EingabeLCN.get().isnumeric():
 
@@ -948,29 +1080,28 @@ def Service_Info(event=None):
                 aucSvcName[nr] = EingabeName.get()
                 Puffer[idxSID[aktSID[nr]]+6] = '<usLCNValue type="0">' + usLCNValue[nr] + '</usLCNValue>\n'
                 Puffer[idxSID[aktSID[nr]]+2] = '<aucSvcName type="0">' + aucSvcName[nr] + '</aucSvcName>\n'
-                Puffer[idxSID[aktSID[nr]]+1] = '<hexAucSvcName type="0">' + aucSvcName[nr].encode("utf-8").hex() + '</hexAucSvcName>\n'
+                Puffer[idxSID[aktSID[nr]]+1] = '<hexAucSvcName type="0">' + aucSvcName[nr].encode("cp1252").hex() + '</hexAucSvcName>\n'
                 Puffer[idxSID[aktSID[nr]]+8] = '<ucSvcNameLength type="0">' + str(len(aucSvcName[nr])) + '</ucSvcNameLength>\n'
                 GEAENDERT = True
 
                 Listen_Box.delete(nr)
-                Listen_Box.insert(nr, " {:>5s}   {:30.30s} {:6s} {:2s} {:2s} {:3s} {:3s}".format(usLCNValue[nr], aucSvcName[nr],\
-                                          usServiceID[nr], bIsScramble[nr], bVisibilityFlag[nr], ucServiceType[nr], usTPIndex[nr]))
+                Listen_Box.insert(nr, " {:>5s} {:>5s}   {:30.30s} {:6s} {:2s} {:2s} {:3s} {:3s}".format(servCountNr[nr], usLCNValue[nr], \
+                                             aucSvcName[nr], usServiceID[nr], bIsScramble[nr], bVisibilityFlag[nr], ucServiceType[nr], usTPIndex[nr]))
                 Listen_Box.selection_set(nr+1)
                 Listen_Box.focus_set()
                 Fenster2.destroy()
 
         if Listen_Box.curselection():
+            nr = Listen_Box.curselection()[0]
 
             Fenster2 = tk.Toplevel(Fenster)
             Fenster2.title("Logische Kanalnummer bearbeiten")
-            Fenster2.geometry("+" + str(Fenster.winfo_x()+20) + "+" + str(Fenster.winfo_y()+308)) 
+            Fenster2.geometry("+" + str(Fenster.winfo_x()+30) + "+" + str(Fenster.winfo_y()+308)) 
             Fenster2.resizable(False, False)
             Fenster2.wm_attributes("-topmost", True)
 
-            nr = Listen_Box.curselection()[0]
-
             EingabeLCN =   tk.Entry(Fenster2, bd=3, width=5, font="Helvetica 11")
-            EingabeName =  tk.Entry(Fenster2, bd=3, width=30, font="Helvetica 11")
+            EingabeName =  tk.Entry(Fenster2, bd=3, width=34, font="Helvetica 11")
             EingabeLCN.pack(padx=40, pady=25, side="left")
             EingabeName.pack(side="left")            
             tk.Label(Fenster2).pack(padx=15, side="left")
@@ -984,17 +1115,28 @@ def Service_Info(event=None):
             EingabeName.bind("<Return>", Eintrag_Aendern)
             Fenster2.bind("<Escape>", lambda event: Fenster2.destroy())
 
+    def ServiceInfo_Drucken(event=None):
+
+        Liste = Listen_Box.get(0, tk.END)
+
+        with open("ServiceInfo.txt", "w") as Datei:
+            for i in Liste:
+                if i[0:6] != "     0":    # keine unsortierten
+                    Datei.write(i + "\n")
+
+        message.showinfo("Service Info", "\nDie Datei ServiceInfo.txt wurde erstellt.  ", parent=Fenster)
+
 #--------------------------------------------
 
     Fenster = tk.Toplevel(Master)
     Fenster.title("Service Info")
-    Fenster.geometry("+" + str(Master.winfo_x()+713) + "+" + str(Master.winfo_y()+7)) 
+    Fenster.geometry("+" + str(Master.winfo_x()+715) + "+" + str(Master.winfo_y()+7)) 
     Fenster.resizable(False, False)
     Fenster.wm_attributes("-topmost", True)
 
     Scroll_Vertikal = tk.Scrollbar(Fenster, width=15)
-    Listen_Box = tk.Listbox(Fenster, width=61, height=41, yscrollcommand=Scroll_Vertikal.set)
-    Titelleiste = tk.Label(Fenster, text="   LCN   Sendername                     SID    P  V STyp TPI", relief="sunken", anchor="w", font=Schrift)
+    Listen_Box = tk.Listbox(Fenster, width=67, height=41, yscrollcommand=Scroll_Vertikal.set)
+    Titelleiste = tk.Label(Fenster, text="   Pos   LCN   Sendername                     SID    P  V STyp TPI", relief="sunken", anchor="w", font=Schrift)
     Statuszeile = tk.Label(Fenster, text="", relief="sunken", anchor="w", font="Helvetica 10")
     Scroll_Vertikal.config(command=Listen_Box.yview)
     Listen_Box.config(bg=Hintergrund, fg=Vordergrund, font=Schrift)
@@ -1009,18 +1151,21 @@ def Service_Info(event=None):
         Listen_Box.insert(tk.END, "  Keine Service Informationen!")
     else:
         for i in range(len(aktSID)):
-            Listen_Box.insert(tk.END, " {:>5s}   {:30.30s} {:6s} {:2s} {:2s} {:3s} {:3s}".format(usLCNValue[i], aucSvcName[i],\
-                                         usServiceID[i], bIsScramble[i], bVisibilityFlag[i], ucServiceType[i], usTPIndex[i]))
+            Listen_Box.insert(tk.END, " {:>5s} {:>5s}   {:30.30s} {:6s} {:2s} {:2s} {:3s} {:3s}".format(servCountNr[i], usLCNValue[i], \
+                                         aucSvcName[i], usServiceID[i], bIsScramble[i], bVisibilityFlag[i], ucServiceType[i], usTPIndex[i]))
         Listen_Box.selection_set(0)
         Listen_Box.focus_set()
-    Statuszeile.config(text = "   {:5d}    |    Sortieren:   LCN = <F9>    Name = <F10>    SID = <F11>".format(len(aktSID)))
+    Statuszeile.config(text = "  {:7d}   |   Sortieren nach:   LCN = <F10>,   Name = <F11>,   SID = <F12>".format(len(aktSID)))
 
     Listen_Box.bind("<Double-Button-1>", Eintrag_Bearbeiten)
     Listen_Box.bind("<Return>", Eintrag_Bearbeiten)
     Listen_Box.bind("<Control-Key-d>", Eintrag_Entfernen)
-    Listen_Box.bind("<F9>", lambda event: SID_Sortieren("LCN"))
-    Listen_Box.bind("<F10>", lambda event: SID_Sortieren("Name"))
-    Listen_Box.bind("<F11>", lambda event: SID_Sortieren("SID"))
+    Listen_Box.bind("<Control-Key-z>", Eintrag_auf_Null)
+    Listen_Box.bind("<Control-Key-p>", ServiceInfo_Drucken)
+    Listen_Box.bind("<F9>", lambda event: SID_Sortieren("Pos"))
+    Listen_Box.bind("<F10>", lambda event: SID_Sortieren("LCN"))
+    Listen_Box.bind("<F11>", lambda event: SID_Sortieren("Name"))
+    Listen_Box.bind("<F12>", lambda event: SID_Sortieren("SID"))
     Fenster.bind("<Escape>", lambda event: Fenster.destroy())
 
 ###############################################################################################################
@@ -1321,7 +1466,7 @@ def Tuning_Info(event=None):
 
 ###############################################################################################################
 
-def Hilfe_Abkuerzungen(event=None):
+def Hilfe_Abkuerzungen(event=None):    # <F1>
 
     Fenster = tk.Toplevel(Master)
     Fenster.title("Abkürzungen")
@@ -1372,6 +1517,46 @@ def Hilfe_Abkuerzungen(event=None):
 
 ###############################################################################################################
 
+def Hilfe_Tastatur(event=None):    # <F2>
+
+    Fenster = tk.Toplevel(Master)
+    Fenster.title("Tastaturbedienung")
+    Fenster.geometry("+" + str(Master.winfo_x()+480) + "+" + str(Master.winfo_y()+170)) 
+    Fenster.resizable(False, False)
+    Fenster.wm_attributes("-topmost", True)
+
+    Text_Fenster = tk.Text(Fenster, width=39, height=21, pady=10, padx=10)
+    Text_Fenster.config(fg=Vordergrund, bg=Hintergrund, font="Consolas 10", wrap="none")
+    Text_Fenster.pack(fill="both", padx=3, pady=3, expand=True)
+
+    Text_Fenster.configure(state="normal")
+    Text_Fenster.delete("1.0", tk.END)
+    Text_Fenster.insert(tk.END, "\n   Datei öffnen:          <Strg+O>\n")
+    Text_Fenster.insert(tk.END, "   Datei speichern:       <Strg+S>\n")
+    Text_Fenster.insert(tk.END, "   Alle Sender anzeigen:  <F3>\n")
+    Text_Fenster.insert(tk.END, "   nach Nummer sortieren: <F4>\n")
+    Text_Fenster.insert(tk.END, "   nach Namen sortieren:  <F5>\n")
+    Text_Fenster.insert(tk.END, "   Sender suchen:         <F7>\n")
+    Text_Fenster.insert(tk.END, "   Sender kopieren:       <F8>\n")
+    Text_Fenster.insert(tk.END, "   Sender bearbeiten:     <Return>\n")
+    Text_Fenster.insert(tk.END, "   Sender entfernen:      <Strg+D>>\n")
+    Text_Fenster.insert(tk.END, "   Senderliste drucken:   <Strg+P>>\n\n")
+
+    Text_Fenster.insert(tk.END, "   Service Info:          <F9>\n")
+    Text_Fenster.insert(tk.END, "   nach LCN sortieren:    <F10>\n")
+    Text_Fenster.insert(tk.END, "   nach Namen sortieren:  <F11>\n")
+    Text_Fenster.insert(tk.END, "   nach SID sortieren:    <F12>\n")
+    Text_Fenster.insert(tk.END, "   ServInfo bearbeiten:   <Return>\n")
+    Text_Fenster.insert(tk.END, "   ServInfo entfernen:    <Strg+D>\n")
+    Text_Fenster.insert(tk.END, "   ServInfo auf Null:     <Strg+Z>\n")
+    Text_Fenster.insert(tk.END, "   Infoliste drucken:     <Strg+P>\n")
+
+    Text_Fenster.configure(state="disabled")
+
+    Fenster.bind("<Escape>", lambda event: Fenster.destroy())
+
+###############################################################################################################
+
 def Hilfe_Ueber():
 
     Fenster = tk.Toplevel(Master)
@@ -1381,7 +1566,7 @@ def Hilfe_Ueber():
     Fenster.wm_attributes("-topmost", True)
     tk.Label(Fenster).pack()
     Zeile1 = tk.Label(Fenster, text="Channel View", font="Helvetica 20 bold")
-    Zeile2 = tk.Label(Fenster, text="Version 1.05", font="Helvetica 14")
+    Zeile2 = tk.Label(Fenster, text="Version 1.06", font="Helvetica 14")
     Zeile3 = tk.Label(Fenster, text="Woodstock (C) 2026", font="Helvetica 12")
     Zeile1.pack(padx=110, pady=10) 
     Zeile2.pack(pady=10) 
@@ -1399,7 +1584,7 @@ def Statuszeile_Anzeigen(*args):
 
 ###############################################################################################################
 
-def Programm_Beenden(event=None):
+def Programm_Beenden(event=None):    # <Strg+Q>
 
     if GEAENDERT:
         if message.askyesno("Channel View", "\nEs wurden Änderungen vorgenommen. Sollen die gespeichert werden?  "):
@@ -1433,60 +1618,61 @@ Menu_Favoriten.add_command(label="  Favoriten 4", command=lambda: Favoriten_Anze
 
 Menu_Sortieren = tk.Menu(Menu_Bearbeiten, tearoff=0, activebackground=Hintergrund, activeforeground=Vordergrund, font="Helvetica 11")
 Menu_Bearbeiten.add_cascade(label="  Sortieren", menu=Menu_Sortieren, underline=2)
-Menu_Sortieren.add_command(label="  nach Nummer",    command=lambda: Sortieren("Nummer"))
-Menu_Sortieren.add_command(label="  nach Namen",     command=lambda: Sortieren("Name"))
-Menu_Sortieren.add_command(label="  nach Frequenz",  command=lambda: Sortieren("Frequenz"))
-Menu_Sortieren.add_command(label="  nach ServiceID", command=lambda: Sortieren("ServiceID"))
+Menu_Sortieren.add_command(label="  Nummer",    command=lambda: Sortieren("Nummer"), accelerator=" <F4> ")
+Menu_Sortieren.add_command(label="  Namen",     command=lambda: Sortieren("Name"), accelerator=" <F5> ")
+Menu_Sortieren.add_command(label="  Frequenz",  command=lambda: Sortieren("Frequenz"))
+Menu_Sortieren.add_command(label="  ServiceID", command=lambda: Sortieren("ServiceID"))
 
-Menu_Filter = tk.Menu(Menu_Bearbeiten, tearoff=0, activebackground=Hintergrund, activeforeground=Vordergrund, font="Helvetica 11")
-Menu_Bearbeiten.add_cascade(label="  Filter ", menu=Menu_Filter, underline=2)
-Menu_Filter.add_command(label="  SD-TV",  command=lambda: Filter_sTyp("SD-TV"))
-Menu_Filter.add_command(label="  HD-TV",  command=lambda: Filter_sTyp("HD-TV"))
-Menu_Filter.add_command(label="  UHD-TV", command=lambda: Filter_sTyp("UHD-TV"))
-Menu_Filter.add_command(label="  Radio",  command=lambda: Filter_sTyp("Radio"))
-Menu_Filter.add_command(label="  Pay-TV", command=Filter_PayTV)
+Menu_Filtern = tk.Menu(Menu_Bearbeiten, tearoff=0, activebackground=Hintergrund, activeforeground=Vordergrund, font="Helvetica 11")
+Menu_Bearbeiten.add_cascade(label="  Filtern ", menu=Menu_Filtern, underline=2)
+Menu_Filtern.add_command(label="  SD-TV ",  command=lambda: Filtern_serviceType("SD-TV"))
+Menu_Filtern.add_command(label="  HD-TV ",  command=lambda: Filtern_serviceType("HD-TV"))
+Menu_Filtern.add_command(label="  UHD-TV ", command=lambda: Filtern_serviceType("UHD-TV"))
+Menu_Filtern.add_command(label="  Radio ",  command=lambda: Filtern_serviceType("Radio"))
+Menu_Filtern.add_command(label="  Pay-TV ", command=Filtern_PayTV)
 
 Menu_Markieren = tk.Menu(Menu_Bearbeiten, tearoff=0, activebackground=Hintergrund, activeforeground=Vordergrund, font="Helvetica 11")
 Menu_Bearbeiten.add_cascade(label="  Markieren", menu=Menu_Markieren, underline=2)
 Menu_Ueberspringen = tk.Menu(Menu_Markieren, tearoff=0, activebackground=Hintergrund, activeforeground=Vordergrund, font="Helvetica 11")
 Menu_Markieren.add_cascade(label="  Überspringen", menu=Menu_Ueberspringen)
-Menu_Ueberspringen.add_command(label="  Radiosender", command=lambda: Sender_Markieren(1,1))
-Menu_Ueberspringen.add_command(label="  Pay-TV",      command=lambda: Sender_Markieren(1,2))
-Menu_Ueberspringen.add_command(label="  Doppelte",    command=lambda: Sender_Markieren(1,3))
-Menu_Ueberspringen.add_command(label="  Unbekannte",  command=lambda: Sender_Markieren(1,4))
+Menu_Ueberspringen.add_command(label="  UHD-TV",    command=lambda: Sender_Markieren(1,1))
+Menu_Ueberspringen.add_command(label="  Radio",     command=lambda: Sender_Markieren(1,2))
+Menu_Ueberspringen.add_command(label="  Pay-TV",    command=lambda: Sender_Markieren(1,3))
+Menu_Ueberspringen.add_command(label="  Unbekannte",command=lambda: Sender_Markieren(1,4))
 Menu_Verstecken = tk.Menu(Menu_Markieren, tearoff=0, activebackground=Hintergrund, activeforeground=Vordergrund, font="Helvetica 11")
 Menu_Markieren.add_cascade(label="  Verstecken", menu=Menu_Verstecken)
-Menu_Verstecken.add_command(label="  Radiosender", command=lambda: Sender_Markieren(2,1))
-Menu_Verstecken.add_command(label="  Pay-TV",      command=lambda: Sender_Markieren(2,2))
-Menu_Verstecken.add_command(label="  Doppelte",    command=lambda: Sender_Markieren(2,3))
-Menu_Verstecken.add_command(label="  Unbekannte",  command=lambda: Sender_Markieren(2,4))
+Menu_Verstecken.add_command(label="  UHD-TV",    command=lambda: Sender_Markieren(2,1))
+Menu_Verstecken.add_command(label="  Radio",     command=lambda: Sender_Markieren(2,2))
+Menu_Verstecken.add_command(label="  Pay-TV",    command=lambda: Sender_Markieren(2,3))
+Menu_Verstecken.add_command(label="  Unbekannte",command=lambda: Sender_Markieren(2,4))
 Menu_Sperren = tk.Menu(Menu_Markieren, tearoff=0, activebackground=Hintergrund, activeforeground=Vordergrund, font="Helvetica 11")
 Menu_Markieren.add_cascade(label="  Sperren", menu=Menu_Sperren)
-Menu_Sperren.add_command(label="  Radiosender", command=lambda: Sender_Markieren(3,1))
-Menu_Sperren.add_command(label="  Pay-TV",      command=lambda: Sender_Markieren(3,2))
-Menu_Sperren.add_command(label="  Doppelte",    command=lambda: Sender_Markieren(3,3))
-Menu_Sperren.add_command(label="  Unbekannte",  command=lambda: Sender_Markieren(3,4))
+Menu_Sperren.add_command(label="  UHD-TV",    command=lambda: Sender_Markieren(3,1))
+Menu_Sperren.add_command(label="  Radio",     command=lambda: Sender_Markieren(3,2))
+Menu_Sperren.add_command(label="  Pay-TV",    command=lambda: Sender_Markieren(3,3))
+Menu_Sperren.add_command(label="  Unbekannte",command=lambda: Sender_Markieren(3,4))
 Menu_Loeschen = tk.Menu(Menu_Markieren, tearoff=0, activebackground=Hintergrund, activeforeground=Vordergrund, font="Helvetica 11")
 Menu_Markieren.add_cascade(label="  Löschen", menu=Menu_Loeschen)
-Menu_Loeschen.add_command(label="  Radiosender", command=lambda: Sender_Markieren(4,1))
-Menu_Loeschen.add_command(label="  Pay-TV",      command=lambda: Sender_Markieren(4,2))
-Menu_Loeschen.add_command(label="  Doppelte",    command=lambda: Sender_Markieren(4,3))
-Menu_Loeschen.add_command(label="  Unbekannte",  command=lambda: Sender_Markieren(4,4))
+Menu_Loeschen.add_command(label="  UHD-TV",    command=lambda: Sender_Markieren(4,1))
+Menu_Loeschen.add_command(label="  Radio",     command=lambda: Sender_Markieren(4,2))
+Menu_Loeschen.add_command(label="  Pay-TV",    command=lambda: Sender_Markieren(4,3))
+Menu_Loeschen.add_command(label="  Unbekannte",command=lambda: Sender_Markieren(4,4))
 
 Menu_Bearbeiten.add_separator()
-Menu_Bearbeiten.add_command(label="  Suchen", command=Sender_Suchen, accelerator=" <F3> ")
-Menu_Bearbeiten.add_command(label="  Alle anzeigen", command=Alle_Anzeigen, accelerator=" <F5> ")
+Menu_Bearbeiten.add_command(label="  Suchen", command=Sender_Suchen, accelerator=" <F7> ")
+Menu_Bearbeiten.add_command(label="  Alle anzeigen", command=Alle_Anzeigen, accelerator=" <F3> ")
 Menu_Bearbeiten.add_separator()
-Menu_Bearbeiten.add_command(label="  Service Info", command=Service_Info, accelerator=" <F7> ")
+Menu_Bearbeiten.add_command(label="  Service Info", command=Service_Info, accelerator=" <F9> ")
 
 Menuleiste.add_cascade(label=" Tuning ", menu=Menu_Information, underline=1)
-Menu_Information.add_command(label="  Satelliten ", command=Satelliten_Info, underline=2)
-Menu_Information.add_command(label="  Transponder ", command=Transponder_Info, underline=2)
-Menu_Information.add_command(label="  TP-Parameter ", command=Transponder_Parameter, underline=3)
-Menu_Information.add_command(label="  Tuning Info ", command=Tuning_Info, underline=3)
+Menu_Information.add_command(label="  Satelliten ", command=Satelliten_Info)
+Menu_Information.add_command(label="  Transponder ", command=Transponder_Info)
+Menu_Information.add_command(label="  TP-Parameter ", command=Transponder_Parameter)
+Menu_Information.add_command(label="  Tuning Info ", command=Tuning_Info)
 
 Menuleiste.add_cascade(label=" Hilfe ", menu=Menu_Hilfe, underline=1)
-Menu_Hilfe.add_command(label="  Abkürzungen", command=Hilfe_Abkuerzungen)
+Menu_Hilfe.add_command(label="  Abkürzungen", command=Hilfe_Abkuerzungen, accelerator=" <F1> ")
+Menu_Hilfe.add_command(label="  Tastatur", command=Hilfe_Tastatur, accelerator=" <F2> ")
 Menu_Hilfe.add_separator()
 Menu_Hilfe.add_command(label="  Über", command=Hilfe_Ueber)
 
@@ -1504,17 +1690,23 @@ Scroll_Vertikal.pack(side="right", fill="y", padx=1, pady=1)
 Listen_Box.pack(fill="both", padx=2, pady=1, expand=True)
 
 Listen_Box.bind("<Double-Button-1>", Sender_Bearbeiten)
-Listen_Box.bind("<Double-Button-3>", Sender_Ueberspringen)
+Listen_Box.bind("<Button-2>", Sender_Ueberspringen)
+Listen_Box.bind("<Double-Button-3>", Sender_Kopieren)
 Listen_Box.bind("<Return>", Sender_Bearbeiten)
 Listen_Box.bind("<BackSpace>", Alle_Anzeigen)
 Listen_Box.bind("<Control-Key-o>", Datei_Oeffnen)
 Listen_Box.bind("<Control-Key-s>", Datei_Speichern)
 Listen_Box.bind("<Control-Key-q>", Programm_Beenden)
 Listen_Box.bind("<Control-Key-d>", Sender_Entfernen)
+Listen_Box.bind("<Control-Key-p>", Senderliste_Drucken)
 Listen_Box.bind("<F1>", Hilfe_Abkuerzungen)
-Listen_Box.bind("<F3>", Sender_Suchen)
-Listen_Box.bind("<F5>", Alle_Anzeigen)
-Listen_Box.bind("<F7>", Service_Info)
+Listen_Box.bind("<F2>", Hilfe_Tastatur)
+Listen_Box.bind("<F3>", Alle_Anzeigen)
+Listen_Box.bind("<F4>", lambda event: Sender_Sortieren("Nummer", event))
+Listen_Box.bind("<F5>", lambda event: Sender_Sortieren("Name", event))
+Listen_Box.bind("<F7>", Sender_Suchen)
+Listen_Box.bind("<F8>", Sender_Kopieren)
+Listen_Box.bind("<F9>", Service_Info)
 
 #----------------------------------------------------------------------
 
