@@ -1618,10 +1618,10 @@ Menu_Favoriten.add_command(label="  Favoriten 4", command=lambda: Favoriten_Anze
 
 Menu_Sortieren = tk.Menu(Menu_Bearbeiten, tearoff=0, activebackground=Hintergrund, activeforeground=Vordergrund, font="Helvetica 11")
 Menu_Bearbeiten.add_cascade(label="  Sortieren", menu=Menu_Sortieren, underline=2)
-Menu_Sortieren.add_command(label="  Nummer",    command=lambda: Sortieren("Nummer"), accelerator=" <F4> ")
-Menu_Sortieren.add_command(label="  Namen",     command=lambda: Sortieren("Name"), accelerator=" <F5> ")
-Menu_Sortieren.add_command(label="  Frequenz",  command=lambda: Sortieren("Frequenz"))
-Menu_Sortieren.add_command(label="  ServiceID", command=lambda: Sortieren("ServiceID"))
+Menu_Sortieren.add_command(label="  Nummer",    command=lambda: Sender_Sortieren("Nummer"), accelerator=" <F4> ")
+Menu_Sortieren.add_command(label="  Namen",     command=lambda: Sender_Sortieren("Name"), accelerator=" <F5> ")
+Menu_Sortieren.add_command(label="  Frequenz",  command=lambda: Sender_Sortieren("Frequenz"))
+Menu_Sortieren.add_command(label="  ServiceID", command=lambda: Sender_Sortieren("ServiceID"))
 
 Menu_Filtern = tk.Menu(Menu_Bearbeiten, tearoff=0, activebackground=Hintergrund, activeforeground=Vordergrund, font="Helvetica 11")
 Menu_Bearbeiten.add_cascade(label="  Filtern ", menu=Menu_Filtern, underline=2)
