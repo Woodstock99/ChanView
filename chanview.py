@@ -801,43 +801,65 @@ def Sender_Bearbeiten(event=None):    # <Return> oder <Doppelklick Links>
 
 def Sender_Kopieren(event=None):    # <F8> 
 
+    def Listen_Kopieren(nummer, name):
+
+        prNum.insert(nr+1,nummer)    # neue Nummer
+        minorNum.insert(nr+1,nummer)
+        original_network_id.insert(nr+1,original_network_id[nr])
+        transport_id.insert(nr+1,transport_id[nr])
+        service_id.insert(nr+1,service_id[nr])
+        serviceType.insert(nr+1,serviceType[nr])
+        servTypText.insert(nr+1,servTypText_Laden(serviceType[nr]))
+        frequency.insert(nr+1,frequency[nr])
+        mapAttr.insert(nr+1,mapAttr[nr])
+        favoriteIdxA.insert(nr+1,favoriteIdxA[nr])
+        favoriteIdxB.insert(nr+1,favoriteIdxB[nr])
+        favoriteIdxC.insert(nr+1,favoriteIdxC[nr])
+        favoriteIdxD.insert(nr+1,favoriteIdxD[nr])
+        favoriteIdxE.insert(nr+1,favoriteIdxE[nr])
+        favoriteIdxF.insert(nr+1,favoriteIdxF[nr])
+        favoriteIdxG.insert(nr+1,favoriteIdxG[nr])
+        favoriteIdxH.insert(nr+1,favoriteIdxH[nr])
+        isInvisable.insert(nr+1,isInvisable[nr])
+        isBlocked.insert(nr+1,isBlocked[nr])
+        isSkipped.insert(nr+1,isSkipped[nr])
+        isDeleted.insert(nr+1,isDeleted[nr])
+        isScrambled.insert(nr+1,isScrambled[nr])
+        vchName.insert(nr+1,name)    # neuer Name
+        isUserSelCHNo.insert(nr+1,"1")
+        videoStreamType.insert(nr+1,videoStreamType[nr])
+
     def Eintrag_Aendern(event=None):
 
         global GEAENDERT, Puffer
 
+        idxITEM.append(idxITEM[-1]+42)        # Zeiger auf neuen letzten Senderblock (vorher = </DTV>)
+        for i in range(42):                   # Neuen Senderblock ans Pufferende kopieren
+            Puffer.insert(idxITEM[-1]+i, Puffer[idxITEM[Aktuelle[nr]]+i])
+
         PrgNum = EingabeNummer.get()
         PrgName = EingabeName.get()
-        HexName = PrgName.encode("cp1252").hex()
-        Puffer[idxITEM[-1]+1]  = "<prNum>"    + str(PrgNum) + "</prNum>\n"
-        Puffer[idxITEM[-1]+2]  = "<minorNum>" + str(PrgNum) + "</minorNum>\n"
+
+        Puffer[idxITEM[-1]+1]  = "<prNum>"    + PrgNum + "</prNum>\n"
+        Puffer[idxITEM[-1]+2]  = "<minorNum>" + PrgNum + "</minorNum>\n"
         Puffer[idxITEM[-1]+38] = "<isUserSelCHNo>1</isUserSelCHNo>\n"
         Puffer[idxITEM[-1]+34] = "<vchName>"    + PrgName + "</vchName>\n"
-        Puffer[idxITEM[-1]+32] = "<hexVchName>" + HexName + "</hexVchName>\n"
+        Puffer[idxITEM[-1]+32] = "<hexVchName>" + PrgName.encode("cp1252").hex() + "</hexVchName>\n"
         Puffer[idxITEM[-1]+35] = "<lengthOfVchName>"             + str(len(PrgName)) + "</lengthOfVchName>\n"
         Puffer[idxITEM[-1]+33] = "<notConvertedLengthOfVchName>" + str(len(PrgName)) + "</notConvertedLengthOfVchName>\n"
+
+        Listen_Kopieren(PrgNum, PrgName)
+        Aktuelle.insert(nr+1,nr+1)
         GEAENDERT = True
+
+        Listen_Box_Zeile_Anzeigen(nr+1, nr+1)
+        StatusAnzahl.set(len(Aktuelle))
         Fenster.destroy()
+
+#--------------------------------------------
 
     if Listen_Box.curselection() and len(Aktuelle) > 0:
         nr = Listen_Box.curselection()[0]
-
-        idxITEM.append(idxITEM[-1]+42)        # Zeiger auf neuen letzten (vorher = </DTV>)
-        for i in range(42):                   # Senderblock ans Ende kopieren
-            Puffer.insert(idxITEM[-1]+i, Puffer[idxITEM[Aktuelle[nr]]+i])
-
-        for PrgNum in range(1, len(idxITEM), 1):      # erste freie Nummer suchen
-            gefunden = False
-            for i in range(0, len(idxITEM), 1):
-                n = Puffer[idxITEM[i]+1].find("</", 7)
-                if str(PrgNum) == Puffer[idxITEM[i]+1][7:n]:    # <prNum>PrgNum</prNum>
-                    gefunden = True
-                    break
-            if not gefunden:   break
-
-        n = Puffer[idxITEM[-1]+32].find("</", 12)
-        HexName = Puffer[idxITEM[-1]+32][12:n]                  # Hex-Namen abgleichen und ersetzen
-        if HexName[0:2] == "05":     HexName = HexName[2:]
-        PrgName = bytearray.fromhex(HexName).decode("cp1252")
 
         Fenster = tk.Toplevel(Master)
         Fenster.title("Sender kopieren nach:")
@@ -852,8 +874,16 @@ def Sender_Kopieren(event=None):    # <F8>
         EingabeName.pack(side="left", padx=10)            
         tk.Label(Fenster).pack(side="left", padx=20)
 
-        EingabeName.insert(0, PrgName)
-        EingabeNummer.insert(0, str(PrgNum))
+        for num in range(1, len(prNum), 1):      # freie Nummer suchen
+            gefunden = False
+            for i in range(0, len(prNum), 1):
+                if str(num) == prNum[i]:
+                    gefunden = True
+                    break
+            if not gefunden:   break
+
+        EingabeName.insert(0, vchName[nr])
+        EingabeNummer.insert(0, str(num))
         EingabeNummer.select_range(0, tk.END)
         EingabeNummer.focus_set()
         EingabeNummer.bind("<Return>", Eintrag_Aendern)
@@ -1690,8 +1720,7 @@ Scroll_Vertikal.pack(side="right", fill="y", padx=1, pady=1)
 Listen_Box.pack(fill="both", padx=2, pady=1, expand=True)
 
 Listen_Box.bind("<Double-Button-1>", Sender_Bearbeiten)
-Listen_Box.bind("<Button-2>", Sender_Ueberspringen)
-Listen_Box.bind("<Double-Button-3>", Sender_Kopieren)
+Listen_Box.bind("<Double-Button-3>", Sender_Ueberspringen)
 Listen_Box.bind("<Return>", Sender_Bearbeiten)
 Listen_Box.bind("<BackSpace>", Alle_Anzeigen)
 Listen_Box.bind("<Control-Key-o>", Datei_Oeffnen)
