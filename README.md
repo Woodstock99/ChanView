@@ -27,7 +27,4 @@ ChanView wurde unter Verwendung eines LG-TV UM7100PLA entwickelt.
 
 - GNU GPL3
 
-[![Hits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2FWoodstock99%2FChanView&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=hits&edge_flat=false)](https://hits.seeyoufarm.com)
-
 ![Badge](https://hitscounter.dev/api/hit?url=https%3A%2F%2Fgithub.com%2FWoodstock99%2FChanView&label=ChanView&icon=stars&color=%230a58ca&message=&style=flat&tz=UTC)
-
