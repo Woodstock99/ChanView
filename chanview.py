@@ -391,7 +391,10 @@ def Sender_Suchen(event=None):    # <F7>
         Listen_Loeschen()
 
         for i in range(len(idxITEM)):
-            if Puffer[idxITEM[i]+34].lower().find(Suchbegriff.lower()) != -1:
+            if Puffer[idxITEM[i]+34].lower().find(Suchbegriff.lower()) != -1 or \
+               Puffer[idxITEM[i]+32].find(Suchbegriff.encode("cp1252").hex()) != -1 or \
+               Puffer[idxITEM[i]+32].find(Suchbegriff.lower().encode("cp1252").hex()) != -1 or \
+               Puffer[idxITEM[i]+32].find(Suchbegriff.upper().encode("cp1252").hex()) != -1:
                 Aktuelle.append(i)
                 ITEM_in_Listen(idxITEM[i])
 
@@ -842,11 +845,11 @@ def Sender_Kopieren(event=None):    # <F8>
 
         Puffer[idxITEM[-1]+1]  = "<prNum>"    + PrgNum + "</prNum>\n"
         Puffer[idxITEM[-1]+2]  = "<minorNum>" + PrgNum + "</minorNum>\n"
-        Puffer[idxITEM[-1]+38] = "<isUserSelCHNo>1</isUserSelCHNo>\n"
         Puffer[idxITEM[-1]+34] = "<vchName>"    + PrgName + "</vchName>\n"
         Puffer[idxITEM[-1]+32] = "<hexVchName>" + PrgName.encode("cp1252").hex() + "</hexVchName>\n"
         Puffer[idxITEM[-1]+35] = "<lengthOfVchName>"             + str(len(PrgName)) + "</lengthOfVchName>\n"
         Puffer[idxITEM[-1]+33] = "<notConvertedLengthOfVchName>" + str(len(PrgName)) + "</notConvertedLengthOfVchName>\n"
+        Puffer[idxITEM[-1]+38] = "<isUserSelCHNo>1</isUserSelCHNo>\n"
 
         Listen_Kopieren(PrgNum, PrgName)
         Aktuelle.insert(nr+1,nr+1)
