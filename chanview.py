@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 #
-#  ChanView v1.06
+#  ChanView v1.07
 #
 #  LG-TV UM7100PLA (webOS)
 #
@@ -14,8 +14,8 @@ import os
 ###############################################################################################################
 
 # Senderlisten:  <CHANNEL> / <DTV> / <ITEM>
-prNum, minorNum, original_network_id, transport_id, service_id, serviceType = [], [], [], [], [], []
-frequency, mapAttr, favoriteIdxA, favoriteIdxB, favoriteIdxC, favoriteIdxD = [], [], [], [], [], [] 
+minorNum, original_network_id, transport_id, service_id, serviceType, servTypText = [], [], [], [], [], []
+prNum, frequency, mapAttr, favoriteIdxA, favoriteIdxB, favoriteIdxC, favoriteIdxD = [], [], [], [], [], [], [] 
 favoriteIdxE, favoriteIdxF, favoriteIdxG, favoriteIdxH, isInvisable, isBlocked  = [], [], [], [], [], []
 isSkipped, isDeleted, isScrambled, vchName, isUserSelCHNo, videoStreamType = [], [], [], [], [], []
 
@@ -44,7 +44,6 @@ idxSID = []           # Zeiger auf <ServCount..>'s
 aktSID = []           # Zeiger auf aktuell angezeigte idxSID[]
 
 TLLDatei = ""
-servTypText = []      # serviceType in Klartext
 GEAENDERT = False
 
 Schrift = "Consolas 9"
@@ -153,16 +152,14 @@ def servTypText_Laden(typ):
 
     if   typ == "1":    return "SD-TV"
     elif typ == "2":    return "Radio"
-    elif typ == "3":    return "VText"
-    elif typ == "7":    return "FM-Radio"
-    elif typ == "10":   return "AAC-Radio"
-    elif typ == "12":   return "Data/Test"
+    elif typ == "7":    return "Radio"
+    elif typ == "10":   return "Radio"
     elif typ == "17":   return "HD-TV"
     elif typ == "22":   return "SD-TV"
     elif typ == "25":   return "HD-TV"
     elif typ == "31":   return "UHD-TV"
     elif typ == "159":  return "UHD-TV"
-    else:               return "unbekannt"
+    else:               return " --- "
 
 ###############################################################################################################
 
@@ -337,7 +334,7 @@ def Listen_in_Puffer(nr):
 
 def Listen_Box_Zeile_Anzeigen(pos, i):
 
-    Listen_Box.insert(pos, "  {:6s} {:5s} {:30.30s} {:10s} {:7s} {:6s} {:6s} {:5s} {:3s} │  {:2s} {:2s} {:2s} {:2s} {:2s} │  {:4s} {:4s} {:4s} {:4s} {:4s} {:4s} {:4s} {:4s}"\
+    Listen_Box.insert(pos, "  {:6s} {:5s} {:28.28s}  {:7s} {:7s} {:7s} {:6s} {:4s} {:3s} │  {:2s} {:2s} {:2s} {:2s} {:2s} │  {:4s} {:4s} {:4s} {:4s} {:4s} {:4s} {:4s} {:4s}"\
         .format(prNum[i], minorNum[i], vchName[i], servTypText[i], frequency[i], service_id[i], transport_id[i], original_network_id[i],\
         videoStreamType[i], isScrambled[i], isSkipped[i], isInvisable[i], isBlocked[i], isDeleted[i],\
         favoriteIdxA[i], favoriteIdxB[i], favoriteIdxC[i], favoriteIdxD[i], favoriteIdxE[i], favoriteIdxF[i], favoriteIdxG[i], favoriteIdxH[i]))
@@ -428,7 +425,7 @@ def Senderliste_Drucken(event=None):
 
     with open("Senderliste.txt", "w") as Datei:
         for i in Liste:
-            Datei.write(i[0:114] + "\n")    # nur bis Fav1
+            Datei.write(i[0:111] + "\n")    # nur bis Fav1
 
     message.showinfo("Channel View", "\nDie Datei Senderliste.txt wurde erstellt.  ")
 
@@ -712,8 +709,8 @@ def Sender_Bearbeiten(event=None):    # <Return> oder <Doppelklick Links>
         nr = Listen_Box.curselection()[0]
 
         Fenster = tk.Toplevel(Master)
-        Fenster.title("Kanal bearbeiten")
-        Fenster.geometry("+" + str(Master.winfo_x()+270) + "+" + str(Master.winfo_y()+300)) 
+        Fenster.title("Sender bearbeiten")
+        Fenster.geometry("+" + str(Master.winfo_x()+310) + "+" + str(Master.winfo_y()+300)) 
         Fenster.resizable(False, False)
         Fenster.wm_attributes("-topmost", True)
 
@@ -745,7 +742,7 @@ def Sender_Bearbeiten(event=None):    # <Return> oder <Doppelklick Links>
         ButtonAbbrechen = tk.Button(Fenster, bd=3, text="Abbrechen", font="Helvetica 11", command=Fenster.destroy)
 
         # 1. Zeile mit 12 Spalten
-        tk.Label(Fenster).grid(row=0, column=0, padx=30, pady=5)
+        tk.Label(Fenster).grid(row=0, column=0, padx=30)
         tk.Label(Fenster).grid(row=0, column=1, padx=16)
         tk.Label(Fenster).grid(row=0, column=2, padx=40)
         tk.Label(Fenster).grid(row=0, column=3, padx=20)
@@ -758,9 +755,9 @@ def Sender_Bearbeiten(event=None):    # <Return> oder <Doppelklick Links>
         tk.Label(Fenster).grid(row=0, column=10, padx=35)
         tk.Label(Fenster).grid(row=0, column=11, padx=20)
         # 2. Zeile = SenderName
-        EingabeName.grid(row=1, column=2, columnspan=8, pady=10)
+        EingabeName.grid(row=1, column=2, columnspan=8, pady=8)
         # 3. Zeile = Nummern & Favoriten
-        TextNr.grid(row=2, column=1, sticky="w", pady=20)
+        TextNr.grid(row=2, column=1, sticky="w", pady=22)
         TextmNr.grid(row=2, column=3, sticky="w")
         TextFav1.grid(row=2, column=5, sticky="w")
         TextFav2.grid(row=2, column=7, sticky="w")
@@ -771,15 +768,14 @@ def Sender_Bearbeiten(event=None):    # <Return> oder <Doppelklick Links>
         EingabeFav2.grid(row=2, column=8, sticky="w")
         EingabeFav3.grid(row=2, column=10, sticky="w")
         # 4. Zeile = Attribute
-        CheckAttrP.grid(row=3, column=1, columnspan=2, sticky="w", pady=5)
+        CheckAttrP.grid(row=3, column=1, columnspan=2, sticky="w")
         CheckAttrU.grid(row=3, column=2, columnspan=4)
         CheckAttrV.grid(row=3, column=5, columnspan=2, sticky="w")
         CheckAttrS.grid(row=3, column=7, columnspan=2, sticky="w")
         CheckAttrL.grid(row=3, column=8, columnspan=3)
         # 5. Zeile
-        ButtonSpeichern.grid(row=4, column=1, columnspan=5, padx=50, pady=18, ipadx=25, sticky="e")
-        ButtonAbbrechen.grid(row=4, column=6, columnspan=5, padx=50, pady=18, ipadx=23, sticky="w")
-        tk.Label(Fenster).grid(row=5, column=0, pady=1)
+        ButtonSpeichern.grid(row=4, column=1, columnspan=5, padx=50, pady=22, ipadx=25, sticky="e")
+        ButtonAbbrechen.grid(row=4, column=6, columnspan=5, padx=50, pady=22, ipadx=23, sticky="w")
 
         EingabeNr.insert(0, prNum[nr])
         EingabeNr.select_range(0, tk.END)
@@ -935,9 +931,9 @@ def Sender_Entfernen(event=None):    # <Strg+D>
     if Listen_Box.curselection() and len(Aktuelle) > 0:
         nr = Listen_Box.curselection()[0]
 
-        for i in range(42):
+        for i in range(42):                      # 42x letztes Element löschen
             Puffer.pop(idxITEM[Aktuelle[nr]])    # <ITEM> bis </ITEM> aus Puffer löschen
-        idxITEM.pop(-1)                          # 42x letztes Element löschen
+        idxITEM.pop(-1)
 
         for i in range(len(Aktuelle)):           # nur nachfolgende Aktuelle -1
             if Aktuelle[i] > Aktuelle[nr]:   Aktuelle[i] -= 1
@@ -1035,42 +1031,12 @@ def Service_Info(event=None):    # <F9>
        
         Listen_Box.delete(0, tk.END) 
         for i in range(len(aktSID)):
-            Listen_Box.insert(tk.END, " {:>5s} {:>5s}   {:30.30s} {:6s} {:2s} {:2s} {:3s} {:3s}".format(servCountNr[i], usLCNValue[i], \
-                                         aucSvcName[i], usServiceID[i], bIsScramble[i], bVisibilityFlag[i], ucServiceType[i], usTPIndex[i]))
+            styp = ucServiceType[i]
+            styp = styp.replace("1","SD-TV").replace("22","SD-TV").replace("17","HD-TV").replace("25","HD-TV").replace("2","Radio")
+            Listen_Box.insert(tk.END, " {:>5s} {:>5s}   {:30.30s} {:7s} {:6s} {:2s} {:2s} {:3s}".format(servCountNr[i], usLCNValue[i], \
+                                         aucSvcName[i], styp, usServiceID[i], bVisibilityFlag[i], bIsScramble[i], usTPIndex[i]))
         Listen_Box.selection_set(0)
         Listen_Box.focus_set()
-
-    def Eintrag_auf_Null(event=None):
-
-        global GEAENDERT, Puffer
-
-        if Listen_Box.curselection():
-            nr = Listen_Box.curselection()[0]
-
-            aucSvcName[nr] = " "
-            usServiceID[nr] = "0"
-            bVisibilityFlag[nr] = "0"
-            bIsScramble[nr] = "0"
-            usLCNValue[nr] = "0"
-            ucServiceType[nr] = "0"
-            usTPIndex[nr] = "0"
-
-            Puffer[idxSID[aktSID[nr]]+1] = '<hexAucSvcName type="0"> </hexAucSvcName>\n'
-            Puffer[idxSID[aktSID[nr]]+2] = '<aucSvcName type="0"> </aucSvcName>\n'
-            Puffer[idxSID[aktSID[nr]]+3] = '<usServiceID type="0">0</usServiceID>\n'
-            Puffer[idxSID[aktSID[nr]]+4] = '<bVisibilityFlag type="0">0</bVisibilityFlag>\n'
-            Puffer[idxSID[aktSID[nr]]+5] = '<bIsScramble type="0">0</bIsScramble>\n'
-            Puffer[idxSID[aktSID[nr]]+6] = '<usLCNValue type="0">0</usLCNValue>\n'
-            Puffer[idxSID[aktSID[nr]]+7] = '<ucServiceType type="0">0</ucServiceType>\n'
-            Puffer[idxSID[aktSID[nr]]+8] = '<ucSvcNameLength type="0">0</ucSvcNameLength>\n'
-            Puffer[idxSID[aktSID[nr]]+9] = '<usTPIndex type="0">0</usTPIndex>\n'
-            GEAENDERT = True
-
-            Listen_Box.delete(nr)
-            Listen_Box.insert(nr, " {:>5s} {:>5s}   {:30.30s} {:6s} {:2s} {:2s} {:3s} {:3s}".format(servCountNr[nr], usLCNValue[nr], \
-                                     aucSvcName[nr], usServiceID[nr], bIsScramble[nr], bVisibilityFlag[nr], ucServiceType[nr], usTPIndex[nr]))
-            Listen_Box.selection_set(nr+1)
-            Listen_Box.focus_set()
 
     def Eintrag_Entfernen(event=None):
 
@@ -1111,15 +1077,19 @@ def Service_Info(event=None):    # <F9>
 
                 usLCNValue[nr] = EingabeLCN.get()
                 aucSvcName[nr] = EingabeName.get()
+                usTPIndex[nr] = EingabeTPI.get()
                 Puffer[idxSID[aktSID[nr]]+6] = '<usLCNValue type="0">' + usLCNValue[nr] + '</usLCNValue>\n'
                 Puffer[idxSID[aktSID[nr]]+2] = '<aucSvcName type="0">' + aucSvcName[nr] + '</aucSvcName>\n'
                 Puffer[idxSID[aktSID[nr]]+1] = '<hexAucSvcName type="0">' + aucSvcName[nr].encode("cp1252").hex() + '</hexAucSvcName>\n'
                 Puffer[idxSID[aktSID[nr]]+8] = '<ucSvcNameLength type="0">' + str(len(aucSvcName[nr])) + '</ucSvcNameLength>\n'
+                Puffer[idxSID[aktSID[nr]]+9] = '<usTPIndex type="0">' + usTPIndex[nr] + '</usTPIndex>\n'
                 GEAENDERT = True
 
                 Listen_Box.delete(nr)
-                Listen_Box.insert(nr, " {:>5s} {:>5s}   {:30.30s} {:6s} {:2s} {:2s} {:3s} {:3s}".format(servCountNr[nr], usLCNValue[nr], \
-                                             aucSvcName[nr], usServiceID[nr], bIsScramble[nr], bVisibilityFlag[nr], ucServiceType[nr], usTPIndex[nr]))
+                styp = ucServiceType[i]
+                styp = styp.replace("1","SD-TV").replace("22","SD-TV").replace("17","HD-TV").replace("25","HD-TV").replace("2","Radio")
+                Listen_Box.insert(tk.END, " {:>5s} {:>5s}   {:30.30s} {:7s} {:6s} {:2s} {:2s} {:3s}".format(servCountNr[i], usLCNValue[i], \
+                                             aucSvcName[i], styp, usServiceID[i], bVisibilityFlag[i], bIsScramble[i], usTPIndex[i]))
                 Listen_Box.selection_set(nr+1)
                 Listen_Box.focus_set()
                 Fenster2.destroy()
@@ -1129,23 +1099,32 @@ def Service_Info(event=None):    # <F9>
 
             Fenster2 = tk.Toplevel(Fenster)
             Fenster2.title("Logische Kanalnummer bearbeiten")
-            Fenster2.geometry("+" + str(Fenster.winfo_x()+30) + "+" + str(Fenster.winfo_y()+308)) 
+            Fenster2.geometry("+" + str(Fenster.winfo_x()+28) + "+" + str(Fenster.winfo_y()+330)) 
             Fenster2.resizable(False, False)
             Fenster2.wm_attributes("-topmost", True)
 
-            EingabeLCN =   tk.Entry(Fenster2, bd=3, width=5, font="Helvetica 11")
-            EingabeName =  tk.Entry(Fenster2, bd=3, width=34, font="Helvetica 11")
-            EingabeLCN.pack(padx=40, pady=25, side="left")
-            EingabeName.pack(side="left")            
+            EingabeName =  tk.Entry(Fenster2, bd=3, width=27, font="Helvetica 11")
+            EingabeLCN =   tk.Entry(Fenster2, bd=3, width=4, font="Helvetica 11")
+            EingabeTPI =   tk.Entry(Fenster2, bd=3, width=4, font="Helvetica 11")
+            TextLCN = tk.Label(Fenster2, text=" LCN:", font="Helvetica 8")
+            TextTPI = tk.Label(Fenster2, text="  TPI:", font="Helvetica 8")
+            tk.Label(Fenster2).pack(padx=15, pady=27, side="left")
+            EingabeName.pack(padx=10, side="left")            
+            TextLCN.pack(side="left")            
+            EingabeLCN.pack(padx=5, side="left")
+            TextTPI.pack(side="left")            
+            EingabeTPI.pack(padx=5, side="left")            
             tk.Label(Fenster2).pack(padx=15, side="left")
         
-            EingabeLCN.insert(0, usLCNValue[nr])
             EingabeName.insert(0, aucSvcName[nr])
+            EingabeLCN.insert(0, usLCNValue[nr])
+            EingabeTPI.insert(0, usTPIndex[nr])
             EingabeLCN.select_range(0, tk.END)
             EingabeLCN.focus_set()
 
             EingabeLCN.bind("<Return>", Eintrag_Aendern)
             EingabeName.bind("<Return>", Eintrag_Aendern)
+            EingabeTPI.bind("<Return>", Eintrag_Aendern)
             Fenster2.bind("<Escape>", lambda event: Fenster2.destroy())
 
     def ServiceInfo_Drucken(event=None):
@@ -1154,7 +1133,7 @@ def Service_Info(event=None):    # <F9>
 
         with open("ServiceInfo.txt", "w") as Datei:
             for i in Liste:
-                if i[0:6] != "     0":    # keine unsortierten
+                if i[7:12] != "    0":    # wenn LCN nicht 0
                     Datei.write(i + "\n")
 
         message.showinfo("Service Info", "\nDie Datei ServiceInfo.txt wurde erstellt.  ", parent=Fenster)
@@ -1163,13 +1142,13 @@ def Service_Info(event=None):    # <F9>
 
     Fenster = tk.Toplevel(Master)
     Fenster.title("Service Info")
-    Fenster.geometry("+" + str(Master.winfo_x()+715) + "+" + str(Master.winfo_y()+7)) 
+    Fenster.geometry("+" + str(Master.winfo_x()+625) + "+" + str(Master.winfo_y()+7)) 
     Fenster.resizable(False, False)
     Fenster.wm_attributes("-topmost", True)
 
     Scroll_Vertikal = tk.Scrollbar(Fenster, width=15)
-    Listen_Box = tk.Listbox(Fenster, width=67, height=41, yscrollcommand=Scroll_Vertikal.set)
-    Titelleiste = tk.Label(Fenster, text="   Pos   LCN   Sendername                     SID    P  V STyp TPI", relief="sunken", anchor="w", font=Schrift)
+    Listen_Box = tk.Listbox(Fenster, width=72, height=41, yscrollcommand=Scroll_Vertikal.set)
+    Titelleiste = tk.Label(Fenster, text="   Pos   LCN   Sendername                     STyp    SID    S  P  TPI", relief="sunken", anchor="w", font=Schrift)
     Statuszeile = tk.Label(Fenster, text="", relief="sunken", anchor="w", font="Helvetica 10")
     Scroll_Vertikal.config(command=Listen_Box.yview)
     Listen_Box.config(bg=Hintergrund, fg=Vordergrund, font=Schrift)
@@ -1184,8 +1163,10 @@ def Service_Info(event=None):    # <F9>
         Listen_Box.insert(tk.END, "  Keine Service Informationen!")
     else:
         for i in range(len(aktSID)):
-            Listen_Box.insert(tk.END, " {:>5s} {:>5s}   {:30.30s} {:6s} {:2s} {:2s} {:3s} {:3s}".format(servCountNr[i], usLCNValue[i], \
-                                         aucSvcName[i], usServiceID[i], bIsScramble[i], bVisibilityFlag[i], ucServiceType[i], usTPIndex[i]))
+            styp = ucServiceType[i]
+            styp = styp.replace("1","SD-TV").replace("22","SD-TV").replace("17","HD-TV").replace("25","HD-TV").replace("2","Radio")
+            Listen_Box.insert(tk.END, " {:>5s} {:>5s}   {:30.30s} {:7s} {:6s} {:2s} {:2s} {:3s}".format(servCountNr[i], usLCNValue[i], \
+                                         aucSvcName[i], styp, usServiceID[i], bVisibilityFlag[i], bIsScramble[i], usTPIndex[i]))
         Listen_Box.selection_set(0)
         Listen_Box.focus_set()
     Statuszeile.config(text = "  {:7d}   |   Sortieren nach:   LCN = <F10>,   Name = <F11>,   SID = <F12>".format(len(aktSID)))
@@ -1193,7 +1174,6 @@ def Service_Info(event=None):    # <F9>
     Listen_Box.bind("<Double-Button-1>", Eintrag_Bearbeiten)
     Listen_Box.bind("<Return>", Eintrag_Bearbeiten)
     Listen_Box.bind("<Control-Key-d>", Eintrag_Entfernen)
-    Listen_Box.bind("<Control-Key-z>", Eintrag_auf_Null)
     Listen_Box.bind("<Control-Key-p>", ServiceInfo_Drucken)
     Listen_Box.bind("<F9>", lambda event: SID_Sortieren("Pos"))
     Listen_Box.bind("<F10>", lambda event: SID_Sortieren("LCN"))
@@ -1203,9 +1183,91 @@ def Service_Info(event=None):    # <F9>
 
 ###############################################################################################################
 
+def ServInfo_Neu_Nummerieren(event=None):
+
+    global GEAENDERT, Puffer
+
+    for i in range(len(Puffer)):
+        if Puffer[i] == "<astServiceInfo>\n":
+            i += 1     # erster <ServCount..>
+            z = 0
+            while Puffer[i] != "</astServiceInfo>\n":
+                Puffer[i] = "<ServCount" + str(z) + ">\n"
+                Puffer[i+13] = "</ServCount" + str(z) + ">\n"
+                z += 1
+                i += 14             # nächster <ServCount..>
+            GEAENDERT = True
+    message.showinfo("Service Info", "\nDie Service Info wurde neu durchnummeriert.  ")
+
 ###############################################################################################################
 
-def Satelliten_Info(event=None):
+def ServInfo_Erstellen(event=None):
+
+    global GEAENDERT, Puffer
+
+    if Listen_Box.curselection():
+        nr = Listen_Box.curselection()[0]
+
+        if message.askyesno("Channel View", '\nSoll eine Service-Info für "' + vchName[nr] + '" erstellt werden?  '):
+
+            for i in range(len(Puffer)):
+                if Puffer[i] == "</astServiceInfo>\n":    # Ende <ServCount..> suchen
+    
+                    n = Puffer[i-1].find('>\n', 11)    # </ServCount..>
+                    z = int(Puffer[i-1][11:n]) + 1     # nächste Nummer
+                    Puffer.insert(i,"<ServCount" + str(z) + ">\n")
+
+                    Puffer.insert(i+1,'<hexAucSvcName type="0">'+vchName[nr].encode("cp1252").hex()+'</hexAucSvcName>\n')
+                    Puffer.insert(i+2,'<aucSvcName type="0">'+vchName[nr]+'</aucSvcName>\n')
+                    Puffer.insert(i+3,'<usServiceID type="0">'+service_id[nr]+'</usServiceID>\n')
+                    Puffer.insert(i+4,'<bVisibilityFlag type="0">'+str(1-int(isInvisable[nr]))+'</bVisibilityFlag>\n')
+                    Puffer.insert(i+5,'<bIsScramble type="0">'+isScrambled[nr]+'</bIsScramble>\n')
+                    Puffer.insert(i+6,'<usLCNValue type="0">'+prNum[nr]+'</usLCNValue>\n')
+                    Puffer.insert(i+7,'<ucServiceType type="0">'+serviceType[nr]+'</ucServiceType>\n')
+                    Puffer.insert(i+8,'<ucSvcNameLength type="0">'+str(len(vchName[nr]))+'</ucSvcNameLength>\n')
+                    Puffer.insert(i+9,'<usTPIndex type="0">0</usTPIndex>\n')      # ???
+                    Puffer.insert(i+10,'<usHDLcn type="0">0</usHDLcn>\n')
+                    Puffer.insert(i+11,'<bIsOptrChBlocked type="0">0</bIsOptrChBlocked>\n')
+                    Puffer.insert(i+12,'<usReservedForFuture type="0">0</usReservedForFuture>\n')
+
+                    Puffer.insert(i+13,"</ServCount" + str(z) + ">\n")
+
+                    #for i in range(len(idxITEM)):      # nach ServInfo einfügen ist idxITEM[] verschoben !?!
+                    #    idxITEM[i] += 14
+
+                    #n = Puffer[idxITEM[Aktuelle[nr]]+32+1].find("</", 12)    # <hexVchName>
+                    #Puffer.insert(i+1,'<hexAucSvcName type="0">'+Puffer[idxITEM[Aktuelle[nr]]+32][12:n]+'</hexAucSvcName>\n')
+                    #n = Puffer[idxITEM[Aktuelle[nr]]+34+2].find("</", 9)     # <vchName>
+                    #Puffer.insert(i+2,'<aucSvcName type="0">'+Puffer[idxITEM[Aktuelle[nr]]+34][9:n]+'</aucSvcName>\n')
+                    #n = Puffer[idxITEM[Aktuelle[nr]]+1+3].find("</", 12)     # <service_id>
+                    #Puffer.insert(i+3,'<usServiceID type="0">'+Puffer[idxITEM[Aktuelle[nr]]+6][12:n]+'</usServiceID>\n')
+                    #n = Puffer[idxITEM[Aktuelle[nr]]+24+4].find("</", 13)    # <isInvisable>
+                    #Puffer.insert(i+4,'<bVisibilityFlag type="0">'+Puffer[idxITEM[Aktuelle[nr]]+24][13:n]+'</bVisibilityFlag>\n')
+                    #n = Puffer[idxITEM[Aktuelle[nr]]+31+5].find("</", 13)    # <isScrambled>
+                    #Puffer.insert(i+5,'<bIsScramble type="0">'+Puffer[idxITEM[Aktuelle[nr]]+31][13:n]+'</bIsScramble>\n')
+                    #n = Puffer[idxITEM[Aktuelle[nr]]+1+6].find("</", 7)      # <prNum>
+                    #Puffer.insert(i+6,'<usLCNValue type="0">'+Puffer[idxITEM[Aktuelle[nr]]+1][7:n]+'</usLCNValue>\n')
+                    #n = Puffer[idxITEM[Aktuelle[nr]]+1+7].find("</", 13)     # <serviceType>
+                    #Puffer.insert(i+7,'<ucServiceType type="0">'+Puffer[idxITEM[Aktuelle[nr]]+9][13:n]+'</ucServiceType>\n')
+                    #n = Puffer[idxITEM[Aktuelle[nr]]+35+8].find("</", 17)    # <lengthOfVchName>
+                    #Puffer.insert(i+8,'<ucSvcNameLength type="0">'+Puffer[idxITEM[Aktuelle[nr]]+35][17:n]+'</ucSvcNameLength>\n')
+                    #n = Puffer[idxITEM[Aktuelle[nr]]+1+9].find("</", 7)      # <???>
+                    #Puffer.insert(i+9,'<usTPIndex type="0">0</usTPIndex>\n')
+                    #n = Puffer[idxITEM[Aktuelle[nr]]+1+10].find("</", 7)     # "0"
+                    #Puffer.insert(i+10,'<usHDLcn type="0">0</usHDLcn>\n')
+                    #n = Puffer[idxITEM[Aktuelle[nr]]+1+11].find("</", 7)     # "0"
+                    #Puffer.insert(i+11,'<bIsOptrChBlocked type="0">0</bIsOptrChBlocked>\n')
+                    #n = Puffer[idxITEM[Aktuelle[nr]]+1+12].find("</", 7)     # "0"
+                    #Puffer.insert(i+12,'<usReservedForFuture type="0">0</usReservedForFuture>\n')
+
+                    GEAENDERT = True
+                    break
+
+###############################################################################################################
+
+###############################################################################################################
+
+def Satelliten_Info():
 
     def SatellitenInfo_Loeschen():
 
@@ -1230,33 +1292,42 @@ def Satelliten_Info(event=None):
                         n = Puffer[z+3].find('</', 22)
                         DirEastWest.append(Puffer[z+3][22:n])
 
+    def SatellitenInfo_Sortieren():
+
+        for j in range(len(SatelliteNameHex)):
+            for i in range(0, len(SatelliteNameHex)-1, 1):
+                if SatelliteNameHex[i] > SatelliteNameHex[i+1]:
+                    SatelliteNameHex[i], SatelliteNameHex[i+1] = SatelliteNameHex[i+1], SatelliteNameHex[i]
+                    Angle[i], Angle[i+1] = Angle[i+1], Angle[i]
+                    AnglePrec[i], AnglePrec[i+1] = AnglePrec[i+1], AnglePrec[i]
+                    DirEastWest[i], DirEastWest[i+1] = DirEastWest[i+1], DirEastWest[i]
+
 #--------------------------------------------
 
     Fenster = tk.Toplevel(Master)
     Fenster.title("Satelliten Info")
-    Fenster.geometry("+" + str(Master.winfo_x()+420) + "+" + str(Master.winfo_y()+6)) 
+    Fenster.geometry("+" + str(Master.winfo_x()+473) + "+" + str(Master.winfo_y()+3)) 
     Fenster.resizable(False, False)
-    Fenster.wm_attributes("-topmost", True)   # Fenster immer im Vordergrund halten
+    Fenster.wm_attributes("-topmost", True)
 
     Scroll_Vertikal = tk.Scrollbar(Fenster, width=15)
-    Listen_Box = tk.Listbox(Fenster, width=46, height=42, yscrollcommand=Scroll_Vertikal.set)
-    Titelleiste = tk.Label(Fenster, text="  Pos  Satellit                    Angel Dir", relief="sunken", anchor="w", font=Schrift)
-    Statuszeile = tk.Label(Fenster, text="", relief="sunken", anchor="w", font="Consolas 1")
+    Listen_Box = tk.Listbox(Fenster, width=44, height=44, yscrollcommand=Scroll_Vertikal.set)
     Scroll_Vertikal.config(command=Listen_Box.yview)
     Listen_Box.config(bg=Hintergrund, fg=Vordergrund, font=Schrift)
     Titelleiste.pack(side="top", fill="x", padx=2, pady=1)
-    Statuszeile.pack(side="bottom", fill="x", padx=2, pady=1)
     Scroll_Vertikal.pack(side="right", fill="y", padx=1, pady=1)
     Listen_Box.pack(fill="both", padx=2, pady=1, expand=True)
 
     SatellitenInfo_Loeschen()
     SatellitenInfo_Laden()
+    SatellitenInfo_Sortieren()
     if len(SatelliteNameHex) == 0:
         Listen_Box.insert(tk.END, "  Keine Satelliten Informationen!")
     else:
         for i in range(len(SatelliteNameHex)):
-            Listen_Box.insert(tk.END, "{:5d}  {:27.27s} {:>3s},{:2s} {:2s}"\
-                .format(i+1, bytearray.fromhex(SatelliteNameHex[i]).decode(), Angle[i], AnglePrec[i], DirEastWest[i]))
+            dirEW = DirEastWest[i].replace("1","Ost").replace("0","West")
+            Listen_Box.insert(tk.END, "    {:25.25s} {:>3s},{:2s} {:2s}"\
+                .format(bytearray.fromhex(SatelliteNameHex[i]).decode(), Angle[i], AnglePrec[i], dirEW))
         Listen_Box.selection_set(0)
         Listen_Box.focus_set()
 
@@ -1298,17 +1369,29 @@ def Transponder_Info():
                     n = Puffer[a+(i*8-2)].find('</', 17)
                     HomeTp.append(Puffer[a+(i*8-2)][17:n])
 
+    def TransponderInfo_Sortieren():
+
+        for j in range(len(TransponderId)):
+            for i in range(0, len(TransponderId)-1, 1):
+                if int(Frequency[i]) > int(Frequency[i+1]):
+                    TransponderId[i], TransponderId[i+1] = TransponderId[i+1], TransponderId[i]
+                    Frequency[i], Frequency[i+1] = Frequency[i+1], Frequency[i]
+                    Polarisation[i], Polarisation[i+1] = Polarisation[i+1], Polarisation[i]
+                    SymbolRate[i], SymbolRate[i+1] = SymbolRate[i+1], SymbolRate[i]
+                    TransmissionSystem[i], TransmissionSystem[i+1] = TransmissionSystem[i+1], TransmissionSystem[i]
+                    HomeTp[i], HomeTp[i+1] = HomeTp[i+1], HomeTp[i]
+
 #--------------------------------------------
 
     Fenster = tk.Toplevel(Master)
     Fenster.title("Transponder Info")
-    Fenster.geometry("+" + str(Master.winfo_x()+490) + "+" + str(Master.winfo_y()+6)) 
+    Fenster.geometry("+" + str(Master.winfo_x()+530) + "+" + str(Master.winfo_y()+6)) 
     Fenster.resizable(False, False)
     Fenster.wm_attributes("-topmost", True)
 
     Scroll_Vertikal = tk.Scrollbar(Fenster, width=15)
-    Listen_Box = tk.Listbox(Fenster, width=36, height=42, yscrollcommand=Scroll_Vertikal.set)
-    Titelleiste = tk.Label(Fenster, text="  Pos  TPI  Freq  Pol SymRt  TS HTp", relief="sunken", anchor="w", font=Schrift)
+    Listen_Box = tk.Listbox(Fenster, width=32, height=42, yscrollcommand=Scroll_Vertikal.set)
+    Titelleiste = tk.Label(Fenster, text="   TID  Freq  Pol SymRt TS HTp", relief="sunken", anchor="w", font=Schrift)
     Statuszeile = tk.Label(Fenster, text="", relief="sunken", anchor="w", font="Consolas 1")
     Scroll_Vertikal.config(command=Listen_Box.yview)
     Listen_Box.config(bg=Hintergrund, fg=Vordergrund, font=Schrift)
@@ -1319,12 +1402,14 @@ def Transponder_Info():
 
     TransponderInfo_Loeschen()
     TransponderInfo_Laden()
+    TransponderInfo_Sortieren()
     if len(TransponderId) == 0:
         Listen_Box.insert(tk.END, "  Keine Transponder Informationen!")
     else:
         for i in range(len(TransponderId)):
-            Listen_Box.insert(tk.END, "{:5d}  {:4s} {:6s} {:2s} {:6s} {:2s} {:2s}"\
-                .format(i+1, TransponderId[i], Frequency[i], Polarisation[i], SymbolRate[i], TransmissionSystem[i], HomeTp[i]))
+            pol = Polarisation[i].replace("1","H").replace("0","V")
+            Listen_Box.insert(tk.END, "{:>6s}  {:6s} {:2s} {:6s} {:2s} {:2s}"\
+                .format(TransponderId[i], Frequency[i], pol, SymbolRate[i], TransmissionSystem[i], HomeTp[i]))
         Listen_Box.selection_set(0)
         Listen_Box.focus_set()
 
@@ -1372,17 +1457,31 @@ def Transponder_Parameter():
                     n = Puffer[a+(i*34-18)].find('</', 23)
                     transport_id2.append(Puffer[a+(i*34-18)][23:n])
 
+    def TransponderParameter_Sortieren():
+
+        for j in range(len(frequency2)):
+            for i in range(0, len(frequency2)-1, 1):
+                if int(frequency2[i]) > int(frequency2[i+1]):
+                    frequency2[i], frequency2[i+1] = frequency2[i+1], frequency2[i]
+                    uwServiceStartIndex[i], uwServiceStartIndex[i+1] = uwServiceStartIndex[i+1], uwServiceStartIndex[i]
+                    uwServiceEndIndex[i], uwServiceEndIndex[i+1] = uwServiceEndIndex[i+1], uwServiceEndIndex[i]
+                    uwServiceCount[i], uwServiceCount[i+1] = uwServiceCount[i+1], uwServiceCount[i]
+                    nitVersion[i], nitVersion[i+1] = nitVersion[i+1], nitVersion[i]
+                    channelIndex[i], channelIndex[i+1] = channelIndex[i+1], channelIndex[i]
+                    original_network_id2[i], original_network_id2[i+1] = original_network_id2[i+1], original_network_id2[i]
+                    transport_id2[i], transport_id2[i+1] = transport_id2[i+1], transport_id2[i]
+
 #--------------------------------------------
 
     Fenster = tk.Toplevel(Master)
     Fenster.title("Transponder Parameter")
-    Fenster.geometry("+" + str(Master.winfo_x()+420) + "+" + str(Master.winfo_y()+6)) 
+    Fenster.geometry("+" + str(Master.winfo_x()+410) + "+" + str(Master.winfo_y()+6)) 
     Fenster.resizable(False, False)
     Fenster.wm_attributes("-topmost", True)
 
     Scroll_Vertikal = tk.Scrollbar(Fenster, width=15)
-    Listen_Box = tk.Listbox(Fenster, width=52, height=42, yscrollcommand=Scroll_Vertikal.set)
-    Titelleiste = tk.Label(Fenster, text="  Pos  TPI  Freq   sStart sEnde  SCt oNID TrID  NIT", relief="sunken", anchor="w", font=Schrift)
+    Listen_Box = tk.Listbox(Fenster, width=50, height=42, yscrollcommand=Scroll_Vertikal.set)
+    Titelleiste = tk.Label(Fenster, text="   TID  Freq   sStart sEnde  SCt oNID TrID  NIT", relief="sunken", anchor="w", font=Schrift)
     Statuszeile = tk.Label(Fenster, text="", relief="sunken", anchor="w", font="Consolas 1")
     Scroll_Vertikal.config(command=Listen_Box.yview)
     Listen_Box.config(bg=Hintergrund, fg=Vordergrund, font=Schrift)
@@ -1393,12 +1492,13 @@ def Transponder_Parameter():
 
     TransponderParameter_Loeschen()
     TransponderParameter_Laden()
+    TransponderParameter_Sortieren()
     if len(channelIndex) == 0:
         Listen_Box.insert(tk.END, "  Keine Transponder Parameter!")
     else:
         for i in range(len(channelIndex)):
-            Listen_Box.insert(tk.END, "{:5d}  {:4s} {:6s} {:6s} {:6s} {:3s} {:4s} {:5s} {:3s}"\
-                .format(i+1, channelIndex[i], frequency2[i], uwServiceStartIndex[i], uwServiceEndIndex[i],\
+            Listen_Box.insert(tk.END, "{:>6s}  {:6s} {:6s} {:6s} {:3s} {:4s} {:5s} {:3s}"\
+                .format(channelIndex[i], frequency2[i], uwServiceStartIndex[i], uwServiceEndIndex[i],\
                 uwServiceCount[i], original_network_id2[i], transport_id2[i], nitVersion[i]))
         Listen_Box.selection_set(0)
         Listen_Box.focus_set()
@@ -1409,7 +1509,7 @@ def Transponder_Parameter():
 
 ###############################################################################################################
 
-def Tuning_Info(event=None):
+def Tuning_Info():
 
     def TuningInfo_Loeschen():
 
@@ -1462,17 +1562,36 @@ def Tuning_Info(event=None):
                     n = Puffer[a+(i*17-3)].find('</', 21)
                     usTPHandle.append(Puffer[a+(i*17-3)][21:n])
 
+    def TuningInfo_Sortieren():
+
+        for j in range(len(unFrequency)):
+            for i in range(0, len(unFrequency)-1, 1):
+                if int(unFrequency[i]) > int(unFrequency[i+1]):
+                    unFrequency[i], unFrequency[i+1] = unFrequency[i+1], unFrequency[i]
+                    unTSID[i], unTSID[i+1] = unTSID[i+1], unTSID[i]
+                    unONID[i], unONID[i+1] = unONID[i+1], unONID[i]
+                    abwSymbolRate[i], abwSymbolRate[i+1] = abwSymbolRate[i+1], abwSymbolRate[i]
+                    abwPolarization[i], abwPolarization[i+1] = abwPolarization[i+1], abwPolarization[i]
+                    abwCodeRate[i], abwCodeRate[i+1] = abwCodeRate[i+1], abwCodeRate[i]
+                    bwDVBS2[i], bwDVBS2[i+1] = bwDVBS2[i+1], bwDVBS2[i]
+                    abwModulationType[i], abwModulationType[i+1] = abwModulationType[i+1], abwModulationType[i]
+                    bwDirection[i], bwDirection[i+1] = bwDirection[i+1], bwDirection[i]
+                    abwAnglePrec[i], abwAnglePrec[i+1] = abwAnglePrec[i+1], abwAnglePrec[i]
+                    ucAngle[i], ucAngle[i+1] = ucAngle[i+1], ucAngle[i]
+                    ucNoOfServices[i], ucNoOfServices[i+1] = ucNoOfServices[i+1], ucNoOfServices[i]
+                    usTPHandle[i], usTPHandle[i+1] = usTPHandle[i+1], usTPHandle[i]
+
 #--------------------------------------------
 
     Fenster = tk.Toplevel(Master)
     Fenster.title("Tuning Info")
-    Fenster.geometry("+" + str(Master.winfo_x()+370) + "+" + str(Master.winfo_y()+6)) 
+    Fenster.geometry("+" + str(Master.winfo_x()+410) + "+" + str(Master.winfo_y()+6)) 
     Fenster.resizable(False, False)
     Fenster.wm_attributes("-topmost", True)
 
     Scroll_Vertikal = tk.Scrollbar(Fenster, width=15)
-    Listen_Box = tk.Listbox(Fenster, width=64, height=42, yscrollcommand=Scroll_Vertikal.set)
-    Titelleiste = tk.Label(Fenster, text="  Pos  Freq   TSID  oNID SymRt Pol CR S2 Mod Dir Angel NOS TPH", relief="sunken", anchor="w", font=Schrift)
+    Listen_Box = tk.Listbox(Fenster, width=61, height=42, yscrollcommand=Scroll_Vertikal.set)
+    Titelleiste = tk.Label(Fenster, text="    Freq  Pol SymRt  TSID oNID CR S2 Mod Dir Angel NOS TPH", relief="sunken", anchor="w", font=Schrift)
     Statuszeile = tk.Label(Fenster, text="", relief="sunken", anchor="w", font="Consolas 1")
     Scroll_Vertikal.config(command=Listen_Box.yview)
     Listen_Box.config(bg=Hintergrund, fg=Vordergrund, font=Schrift)
@@ -1483,12 +1602,14 @@ def Tuning_Info(event=None):
 
     TuningInfo_Loeschen()
     TuningInfo_Laden()
+    TuningInfo_Sortieren()
     if len(unFrequency) == 0:
         Listen_Box.insert(tk.END, "  Keine Tuning Informationen!")
     else:
         for i in range(len(unFrequency)):
-            Listen_Box.insert(tk.END, "{:5d}  {:6s} {:5s} {:4s} {:6s}  {:2s} {:2s} {:2s} {:2s} {:2s} {:>3s},{:2s} {:3} {:4s}"\
-                .format(i+1, unFrequency[i], unTSID[i], unONID[i], abwSymbolRate[i], abwPolarization[i], abwCodeRate[i], bwDVBS2[i],\
+            pol = abwPolarization[i].replace("1","H").replace("0","V")
+            Listen_Box.insert(tk.END, "    {:5s}  {:2s} {:6s} {:5s} {:4s} {:2s} {:2s} {:2s} {:2s} {:>3s},{:2s} {:3} {:4s}"\
+                .format(unFrequency[i], pol, abwSymbolRate[i], unTSID[i], unONID[i], abwCodeRate[i], bwDVBS2[i],\
                 abwModulationType[i], bwDirection[i], ucAngle[i], abwAnglePrec[i], ucNoOfServices[i], usTPHandle[i]))
         Listen_Box.selection_set(0)
         Listen_Box.focus_set()
@@ -1503,17 +1624,18 @@ def Hilfe_Abkuerzungen(event=None):    # <F1>
 
     Fenster = tk.Toplevel(Master)
     Fenster.title("Abkürzungen")
-    Fenster.geometry("+" + str(Master.winfo_x()+520) + "+" + str(Master.winfo_y()+80)) 
+    Fenster.geometry("+" + str(Master.winfo_x()+480) + "+" + str(Master.winfo_y()+48)) 
     Fenster.resizable(False, False)
     Fenster.wm_attributes("-topmost", True)
 
-    Text_Fenster = tk.Text(Fenster, width=35, height=33, pady=10, padx=10)
+    Text_Fenster = tk.Text(Fenster, width=35, height=35, pady=10, padx=10)
     Text_Fenster.config(fg=Vordergrund, bg=Hintergrund, font="Consolas 10", wrap="none")
     Text_Fenster.pack(fill="both", padx=3, pady=3, expand=True)
 
     Text_Fenster.configure(state="normal")
     Text_Fenster.delete("1.0", tk.END)
     Text_Fenster.insert(tk.END, "\n   Angel =  Winkel\n")
+    Text_Fenster.insert(tk.END, "   B     =  Blockieren, Sperren\n")
     Text_Fenster.insert(tk.END, "   CR    =  Code-Rate\n")
     Text_Fenster.insert(tk.END, "   Dir   =  Ausrichtung (West/Ost)\n")
     Text_Fenster.insert(tk.END, "   Fav   =  Favoriten\n")
@@ -1526,21 +1648,22 @@ def Hilfe_Abkuerzungen(event=None):    # <F1>
     Text_Fenster.insert(tk.END, "   NID   =  Netzwerk-ID\n")
     Text_Fenster.insert(tk.END, "   NIT   =  NIT-Version\n")
     Text_Fenster.insert(tk.END, "   NOS   =  Anzahl Services\n")
-    Text_Fenster.insert(tk.END, "   oNID  =  Originale Netzwerk-ID\n")
+    Text_Fenster.insert(tk.END, "   oNID  =  originale Netzwerk-ID\n")
     Text_Fenster.insert(tk.END, "   P     =  Pay-TV\n")
     Text_Fenster.insert(tk.END, "   Pol   =  Polarisation\n")
     Text_Fenster.insert(tk.END, "   Pos   =  Position\n")
-    Text_Fenster.insert(tk.END, "   S     =  Sperren\n")
+    Text_Fenster.insert(tk.END, "   S     =  Sichtbarkeit\n")
     Text_Fenster.insert(tk.END, "   S2    =  DVBS2\n")
     Text_Fenster.insert(tk.END, "   SCt   =  Service-Count\n")
     Text_Fenster.insert(tk.END, "   SID   =  Service-ID\n")
     Text_Fenster.insert(tk.END, "   STyp  =  Service-Typ\n")
     Text_Fenster.insert(tk.END, "   SymRt =  Symbolrate\n")
+    Text_Fenster.insert(tk.END, "   TID   =  Transponder-ID\n")
     Text_Fenster.insert(tk.END, "   TPH   =  TP-Handle\n")
     Text_Fenster.insert(tk.END, "   TPI   =  Transponder-Index\n")
     Text_Fenster.insert(tk.END, "   TrID  =  Transport-ID\n")
     Text_Fenster.insert(tk.END, "   TS    =  Transmission-System\n")
-    Text_Fenster.insert(tk.END, "   TSID  =  Transponder-ID\n")
+    Text_Fenster.insert(tk.END, "   TSID  =  Transponder-Service-ID\n")
     Text_Fenster.insert(tk.END, "   Ü     =  Überspringen\n")
     Text_Fenster.insert(tk.END, "   V     =  Verstecken\n")
     Text_Fenster.insert(tk.END, "   VST   =  Videostream-Typ\n")
@@ -1554,11 +1677,11 @@ def Hilfe_Tastatur(event=None):    # <F2>
 
     Fenster = tk.Toplevel(Master)
     Fenster.title("Tastaturbedienung")
-    Fenster.geometry("+" + str(Master.winfo_x()+480) + "+" + str(Master.winfo_y()+170)) 
+    Fenster.geometry("+" + str(Master.winfo_x()+473) + "+" + str(Master.winfo_y()+172)) 
     Fenster.resizable(False, False)
     Fenster.wm_attributes("-topmost", True)
 
-    Text_Fenster = tk.Text(Fenster, width=39, height=21, pady=10, padx=10)
+    Text_Fenster = tk.Text(Fenster, width=39, height=22, pady=10, padx=10)
     Text_Fenster.config(fg=Vordergrund, bg=Hintergrund, font="Consolas 10", wrap="none")
     Text_Fenster.pack(fill="both", padx=3, pady=3, expand=True)
 
@@ -1580,9 +1703,10 @@ def Hilfe_Tastatur(event=None):    # <F2>
     Text_Fenster.insert(tk.END, "   nach Namen sortieren:  <F11>\n")
     Text_Fenster.insert(tk.END, "   nach SID sortieren:    <F12>\n")
     Text_Fenster.insert(tk.END, "   ServInfo bearbeiten:   <Return>\n")
+    Text_Fenster.insert(tk.END, "   ServInfo erstellen:    <Strg+I>\n")
     Text_Fenster.insert(tk.END, "   ServInfo entfernen:    <Strg+D>\n")
-    Text_Fenster.insert(tk.END, "   ServInfo auf Null:     <Strg+Z>\n")
-    Text_Fenster.insert(tk.END, "   Infoliste drucken:     <Strg+P>\n")
+    Text_Fenster.insert(tk.END, "   SInfo neu nummerieren: <Strg+N>\n")
+    Text_Fenster.insert(tk.END, "   SInfoliste drucken:    <Strg+P>\n")
 
     Text_Fenster.configure(state="disabled")
 
@@ -1594,12 +1718,12 @@ def Hilfe_Ueber():
 
     Fenster = tk.Toplevel(Master)
     Fenster.title("Über")
-    Fenster.geometry("+" + str(Master.winfo_x()+480) + "+" + str(Master.winfo_y()+350)) 
+    Fenster.geometry("+" + str(Master.winfo_x()+473) + "+" + str(Master.winfo_y()+350)) 
     Fenster.resizable(False, False)
     Fenster.wm_attributes("-topmost", True)
     tk.Label(Fenster).pack()
     Zeile1 = tk.Label(Fenster, text="Channel View", font="Helvetica 20 bold")
-    Zeile2 = tk.Label(Fenster, text="Version 1.06", font="Helvetica 14")
+    Zeile2 = tk.Label(Fenster, text="Version 1.07", font="Helvetica 14")
     Zeile3 = tk.Label(Fenster, text="Woodstock (C) 2026", font="Helvetica 12")
     Zeile1.pack(padx=110, pady=10) 
     Zeile2.pack(pady=10) 
@@ -1700,8 +1824,8 @@ Menu_Bearbeiten.add_command(label="  Service Info", command=Service_Info, accele
 Menuleiste.add_cascade(label=" Tuning ", menu=Menu_Information, underline=1)
 Menu_Information.add_command(label="  Satelliten ", command=Satelliten_Info)
 Menu_Information.add_command(label="  Transponder ", command=Transponder_Info)
-Menu_Information.add_command(label="  TP-Parameter ", command=Transponder_Parameter)
 Menu_Information.add_command(label="  Tuning Info ", command=Tuning_Info)
+Menu_Information.add_command(label="  TP-Parameter ", command=Transponder_Parameter)
 
 Menuleiste.add_cascade(label=" Hilfe ", menu=Menu_Hilfe, underline=1)
 Menu_Hilfe.add_command(label="  Abkürzungen", command=Hilfe_Abkuerzungen, accelerator=" <F1> ")
@@ -1710,9 +1834,9 @@ Menu_Hilfe.add_separator()
 Menu_Hilfe.add_command(label="  Über", command=Hilfe_Ueber)
 
 Scroll_Vertikal = tk.Scrollbar(Master, width=15)
-Listen_Box = tk.Listbox(Master, width=150, height=45, yscrollcommand=Scroll_Vertikal.set)
+Listen_Box = tk.Listbox(Master, width=146, height=45, yscrollcommand=Scroll_Vertikal.set)
 Titelleiste = tk.Label(Master, text="", relief="sunken", anchor="w", font=Schrift)
-Titelleiste.config(text="  Nr     mNr   Sendername                     STyp       Freq    SID    TSID   oNID  VST    P  Ü  V  S  L     Fav1 Fav2 Fav3 Fav4 Fav5 Fav6 Fav7 Fav8")
+Titelleiste.config(text="  Nr     mNr   Sendername                    STyp    Freq     SID    TSID  oNID  VST    P  Ü  V  B  L     Fav1 Fav2 Fav3 Fav4 Fav5 Fav6 Fav7 Fav8")
 Statuszeile = tk.Label(Master, textvariable=Statusleiste, relief="sunken", anchor="w", font="Helvetica 11")
 Master.config(menu=Menuleiste)
 Scroll_Vertikal.config(command=Listen_Box.yview)
@@ -1724,13 +1848,16 @@ Listen_Box.pack(fill="both", padx=2, pady=1, expand=True)
 
 Listen_Box.bind("<Double-Button-1>", Sender_Bearbeiten)
 Listen_Box.bind("<Double-Button-3>", Sender_Ueberspringen)
+Listen_Box.bind("<Button-3>", ServInfo_Erstellen)
 Listen_Box.bind("<Return>", Sender_Bearbeiten)
 Listen_Box.bind("<BackSpace>", Alle_Anzeigen)
 Listen_Box.bind("<Control-Key-o>", Datei_Oeffnen)
 Listen_Box.bind("<Control-Key-s>", Datei_Speichern)
 Listen_Box.bind("<Control-Key-q>", Programm_Beenden)
+Listen_Box.bind("<Control-Key-i>", ServInfo_Erstellen)
 Listen_Box.bind("<Control-Key-d>", Sender_Entfernen)
 Listen_Box.bind("<Control-Key-p>", Senderliste_Drucken)
+Listen_Box.bind("<Control-Key-n>", ServInfo_Neu_Nummerieren)
 Listen_Box.bind("<F1>", Hilfe_Abkuerzungen)
 Listen_Box.bind("<F2>", Hilfe_Tastatur)
 Listen_Box.bind("<F3>", Alle_Anzeigen)
